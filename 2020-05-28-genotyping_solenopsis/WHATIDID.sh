@@ -11,15 +11,19 @@ module load anaconda3
 # conda install -c bioconda vcflib
 # conda install -c bioconda vt
 # conda install -c bioconda bcftools
+# conda install -c bioconda vcftools
 
 conda activate 2020-05-env
 
 mkdir -p tmp/logs
 
-ls -1 input/bams/*.bam > tmp/bam.list
+ls -1 -d input/bams/*.bam > tmp/bam.list
+ls -1 -d $PWD/input/bams/*.bam > tmp/bam_full_path.list
 
 wc -l tmp/bam.list
 # 388 tmp/bam.list
+wc -l tmp/bam_full_path.list
+#      388 tmp/bam_full_path.list
 
 # PROBLEMS
 # There are a number 15 regions with no range:
@@ -33,157 +37,130 @@ grep -c ":1-1$" input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.reg
 # Call variant sites without individual genotyping
 # ---------------------------------------------------------------------------- #
 
-# Variant calling
-qsub qsub.sh
+mkdir -p tmp/nextflow
+./nextflow run identify_snp_sites.nf \
+  -w tmp/nextflow/indentify_snp_sites \
+  -with-report tmp/nextflow/indentify_snp_sites.html \
+  -resume 1> tmp/nextflow/indentify_snp_sites.log
+
+module load ruby
+
+ls tmp/site_identification/*vcf \
+  | cut -f 3 -d '/' \
+  | ruby -pe 'gsub(/\.vcf/, "")' \
+  | sort > tmp/already_done
+
+cat input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.regions \
+  | sort > tmp/alltodo
+
+comm -13 \
+  tmp/already_done \
+  tmp/alltodo \
+  | grep -v ":1-1$" > tmp/todo
+
+mkdir -p tmp/nextflow
+./nextflow run identify_snp_sites.nf \
+  --region 'tmp/todo' \
+  --out_vcf 'tmp/site_identification/run_2' \
+  -w tmp/nextflow/indentify_snp_sites_run_2 \
+  -with-report tmp/nextflow/indentify_snp_sites_run_2.html \
+  -resume 1> tmp/nextflow/indentify_snp_sites_run_2.log
+
+for p in tmp/site_identification/run_2/*; do
+  ln -sfr $p tmp/site_identification/
+done
 
 # Variant filter
-qsub filter_genotypes_qsub.sh
+grep -v ":1-1$" input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.regions \
+  > tmp/regions
+zcat input/reference_genome_dir/gng20170922.fa.FILTER2.bed.gz \
+ > tmp/regions_to_remove.bed
 
-# This showed that the following failed:
-grep -c ENDS tmp/filtered_logs/** | grep ":0"
-# Looking manually through the output of the genotyping step:
-#    qacct -j 1108705
-# It's aparent that it failed because the run ran out of memory, yet didn't give
-# an error message (exit code always 0)
+qsub filter_sites_qsub.sh
 
-# So  identify the failed regions
-grep -c ENDS tmp/filtered_logs/** | grep ":0"  | cut -f1 -d ":" \
- >  tmp/filter_fail
-module load ruby
-grep "region:" `cat tmp/filter_fail` \
-  | ruby -pe 'gsub(/.+region\:/, "")' \
-  > tmp/fail_regions
-wc -l tmp/fail_regions
-# 204 tmp/fail_regions
+# qacct -j 1151250 | grep -wE 'exit_status' | sed 's/ *$//g' \
+#  | egrep -v "status  0$"
+# Returns nothing
+# grep -c ENDS tmp/site_filter_logs/** | grep ":0" | cut -f1 -d ":"
+# Returns nothing
+ls tmp/site_identification/*.vcf | wc -l
+# 14059
+ls tmp/site_filter/*/*.vcf | wc -l
+# 14059
 
-grep -n -f tmp/fail_regions input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.regions \
- | cut -f 1 -d ":" \
- > tmp/fail_regions_line_number
+rm -rf tmp/nextflow/indentify_snp_sites_run_2
+rm -rf tmp/nextflow/indentify_snp_sites
 
-while read task; do
-  qsub -t $task -l h_rt=48:00:00 -l h_vmem=60G qsub.sh
-  sleep 0.1
-done < tmp/fail_regions_line_number
+ls tmp/site_identification/*.vcf \
+  | parallel -j 5 "bgzip {}" &
 
-# Variant filter for the regions that failed VCF calling
-while read task; do
-  qsub -t $task -o tmp/filtered_logs_second_run/ filter_genotypes_qsub.sh
-  sleep 0.01
-done < tmp/fail_regions_line_number
-
-grep -c ENDS tmp/filtered_logs_second_run/** | grep ":0"
-# Nothing is returned, meaning all VCF files now worked
-
-# Just to make sure
-grep -l Killed tmp/logs/qsub.sh.o11* > tmp/killed_qsub
-while read p; do
-  head -n1 $p | cut -f 3 -d "/" >> tmp/killed
-done < tmp/killed_qsub
-grep -n -f tmp/killed input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.regions \
- | cut -f 1 -d ":" \
- > tmp/killed_regions_line_number
-
-wc -l tmp/killed_regions_line_number
-# One more than before
-
-diff tmp/killed_regions_line_number tmp/fail_regions_line_number
-190d189
-< 12337
-196d194
-< 12917
-
-qsub -t 12337 -l h_rt=48:00:00 -l h_vmem=60G qsub.sh
-qsub -t 12917 -l h_rt=48:00:00 -l h_vmem=60G qsub.sh
-
-qsub -t 12337 -o tmp/filtered_logs_second_run/ filter_genotypes_qsub.sh
-qsub -t 12917 -o tmp/filtered_logs_second_run/ filter_genotypes_qsub.sh
-
-# There was a bug in the filter step, so here I run it again
-rm -rf tmp/filtered_chunks
-qsub -o tmp/filtered_logs_2/ filter_genotypes_qsub.sh
-qacct -j 1118367  | grep -wE 'exit_status' \
-  | sed 's/ *$//g' | egrep -v "status  0$" # returns nothing
-
-# Fuse all VCF files
 ## drop genotypes
 qsub drop_genotypes_qsub.sh
 
-grep ENDS tmp/drop_genotype_logs/* | wc -l
-# 14074
-qacct -j 1118551  | grep -wE 'exit_status' \
-  | sed 's/ *$//g' | egrep -v "status  0$" # returns nothing
+VCF1=tmp/site_filter/11/$(head -n 1 tmp/regions).vcf
 
-VCF1=tmp/filtered_chunks/11/$(head -n 1 input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.regions).vcf.gz
-
-#fuse  ## run directly with 20 Treads for compression
-tabix -H $VCF1 | grep "##" > tmp/fused_initial.vcf
-tabix -H $VCF1 | grep -m1 "#CHROM" | cut -f1-9 >> tmp/fused_initial.vcf
+grep "##" $VCF1 > tmp/fused_initial.vcf
+grep -m1 "#CHROM" $VCF1 | cut -f1-9 >> tmp/fused_initial.vcf
 cat tmp/drop_genotype_chunks/*/*.vcf >> tmp/fused_initial.vcf
 
-cat tmp/fused_initial.vcf | vcfstreamsort -a \
-  | bgzip -f -@ 20 -c /dev/stdin > tmp/variant_guide.vcf.gz
+bcftools sort tmp/fused_initial.vcf | bgzip -c > tmp/variant_guide.vcf.gz
 tabix -fp vcf tmp/variant_guide.vcf.gz
 
 rm -f tmp/fused_initial.vcf
 
-vt peek tmp/variant_guide.vcf.gz 2> tmp/variant_guide.vcf.stats
+vt peek tmp/variant_guide.vcf.gz 2> tmp/variant_guide.vcf.stats &
 
 # Count SNPs
-zgrep -vc "#" tmp/freebayes_chunks/*/*.vcf.gz > tmp/variant_identification_line_count
-zgrep -vc "#" tmp/filtered_chunks/*/*.vcf.gz > tmp/variant_filtering_line_count
+zgrep -vc "#" tmp/site_identification/*.vcf.gz > tmp/site_identification_line_count &
+grep -vc "#" tmp/site_filter/*/*.vcf > tmp/site_filtering_line_count &
 
-zgrep -v "#" tmp/freebayes_chunks/*/*.vcf.gz | wc -l > tmp/variant_identification_line_count_sum
-zgrep -v "#" tmp/filtered_chunks/*/*.vcf.gz | wc -l > tmp/variant_filtering_line_count_sum
+zgrep -v "#" tmp/site_identification/*.vcf.gz | wc -l > tmp/site_identification_line_count_sum &
+grep -v "#" tmp/site_filter/*/*.vcf | wc -l > tmp/site_filtering_line_count_sum &
 
-snp_count <- read.table("tmp/variant_identification_line_count")
-snp_count <- gsub(".+vcf.gz:", "", as.character(snp_count$V1))
-snp_count <- as.numeric(snp_count)
-
+cd tmp
+tar -czvf site_filter.tar.gz site_filter &
+cd ..
 
 # ---------------------------------------------------------------------------- #
 # Step 2:
-# Genotype all individuals at called positions
+# Individual genotype each at each site
 # ---------------------------------------------------------------------------- #
 
-# Call genotypes
-qsub sample_genotype_qsub.sh
-# run 1124285
+mkdir -p tmp/nextflow/genotype_snp_sites
+./nextflow run genotype_snp_sites.nf \
+  -w tmp/nextflow/genotype_snp_sites \
+  -with-report tmp/nextflow/genotype_snp_sites.html \
+  -resume 1> tmp/nextflow/genotype_snp_sites.log
+
+cd tmp/nextflow/
+tar -czvf genotype_snp_sites.tar.gz genotype_snp_sites &
+cd ../../
+
+qsub filter_genotypes_qsub.sh
+# Your job-array 1169472.1-14059:1 ("filter_genotypes_qsub.sh") has been submitted
+
+grep -c ENDS tmp/genotype_filter_logs/*1169472* | grep ":0"  | cut -f1 -d ":"
 module load ruby
-qacct -j 1124285 | grep exit_status | sed 's/ *$//g' | egrep "status  0$" \
+qacct -j 1169472 | grep exit_status | sed 's/ *$//g' \
  | ruby -pe 'gsub(/ +/, " ")' | cut -f 2 -d " " | sort | uniq
 # 0
 module unload ruby
 
-# Filter genotypes
-qsub filter_second_round_qsub.sh
-grep -c ENDS tmp/filtered_logs_2/*1127869* | grep ":0"  | cut -f1 -d ":"
 
-# Fuse VCF files into a single VCF
-grep "1-1$" input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.regions \
- > tmp/to_remove
-
-while read p; do
-  ls tmp/genotyping_filtered/*/$p.vcf.gz* >> tmp/files_to_remove;
-done < tmp/to_remove
-
-while read p; do rm -f $p; done < tmp/files_to_remove
-
-VCF1=tmp/genotyping_filtered/11/$(head -n 1 input/reference_genome_dir/gnG.REGIONS.splitby.FILTER2.500bp.regions).vcf.gz
+VCF1=tmp/genotype_filter/11/$(head -n 1 tmp/regions).vcf
 bcftools view --header-only $VCF1 > tmp/genotypes.vcf
-zgrep --no-filename -v "#" tmp/genotyping_filtered/*/*.vcf.gz \
-  >> tmp/genotypes.vcf
+grep --no-filename -v "#" tmp/genotype_filter/*/*.vcf >> tmp/genotypes.vcf
 
-rm tmp/genotypes.vcf
-
-cat tmp/genotypes.vcf \
-  | vcfstreamsort -a \
-  | bgzip -f -@ 20 -c /dev/stdin \
-  > tmp/genotypes.vcf.gz
+bcftools sort tmp/genotypes.vcf| bgzip -c > tmp/genotypes.vcf.gz
 
 tabix -fp vcf tmp/genotypes.vcf.gz
 
 vt peek tmp/genotypes.vcf.gz 2> tmp/genotypes.vcf.stats
 bcftools stats tmp/genotypes.vcf.gz > tmp/genotypes.vcf.stats2
+
+rm tmp/genotypes.vcf
+
+ls tmp/genotype_filter/*/*.vcf | parallel -j 5 bgzip {} &
 
 # ---------------------------------------------------------------------------- #
 # Step 3: rename the samples in the VCF file
@@ -429,21 +406,268 @@ ln -sfr results/genotypes_samplesrenamed.vcf.gz results/genotypes.vcf.gz
 ln -sfr results/genotypes_samplesrenamed.vcf.gz.tbi results/genotypes.vcf.gz.tbi
 ln -sfr results/genotypes_samplesrenamed.vcf.stats results/genotypes.vcf.stats
 
-# ---------------------------------------------------------------------------- #
-# Step 4: make a single VCF for each sample
-# ---------------------------------------------------------------------------- #
-## split into single sample VCF
-mkdir -p tmp/genotypes_per_samples
-
-cat tmp/genotypes_samplesrenamed.vcf.samplenames \
-  | parallel -j 10 \
-  "echo {}; vcfkeepsamples results/genotypes_samplesrenamed.vcf.gz {} \
-  | bgzip -f -@ 5 -c /dev/stdin \
-  > tmp/genotypes_per_samples/{}.vcf.gz && tabix -fp vcf tmp/genotypes_per_samples/{}.vcf.gz"
-
-mv tmp/genotypes_per_samples results/genotypes_per_samples
+ln -sfr results/genotypes_samplesrenamed.vcf.gz tmp/
+ln -sfr results/genotypes_samplesrenamed.vcf.gz.tbi tmp/
+ln -sfr results/genotypes_samplesrenamed.vcf.stats tmp/
 
 # ---------------------------------------------------------------------------- #
+# Heterozigosity filter
 
-# CHeck before filtering
-normalise command - check if necessary
+# First, we filter each genotype by coverage
+# Here, we turn each heterozygous genotype into "missing"
+
+## set low cov & low GQ to missing
+# set heterozygous genotypes to missing
+# set partially missing genotypes to completely missing
+mkdir -p tmp/het_filter
+zcat results/genotypes_samplesrenamed.vcf.gz \
+  | bcftools +setGT - -- -t q -i "FMT/DP < 2" -n . \
+  | bcftools +setGT - -- -t q -i "FMT/GQ < 1 & FMT/DP < 10 " -n . \
+  | bcftools +setGT - -- -t ./x -n . \
+  | bcftools +setGT - -- -t q -i 'GT="het"' -n . \
+  | bgzip -c > tmp/het_filter/genotypes.het_to_missing.vcf.gz
+tabix -p vcf tmp/het_filter/genotypes.het_to_missing.vcf.gz
+bcftools stats tmp/het_filter/genotypes.het_to_missing.vcf.gz \
+  > tmp/het_filter/genotypes.het_to_missing.vcf.stats
+
+# Het counting
+zcat tmp/het_filter/genotypes.het_to_missing.vcf.gz \
+  | vcfhetcount > tmp/het_filter/genotypes.het_to_missing.vcf.het_count # All field == 0 here
+zcat results/genotypes_samplesrenamed.vcf.gz \
+  | vcfhetcount > tmp/het_filter/genotypes_samplesrenamed.vcf.het_count
+
+#r
+# het <- read.table("tmp/het_filter/genotypes_samplesrenamed.vcf.het_count")
+# het <- t(het)
+# het <- write.table(het,
+#               file = "tmp/het_filter/het_count",
+#               col.names = FALSE,
+#               row.names = FALSE,
+#               quote = FALSE,
+#               sep = "\t")
+
+# Remove sites where more than 25% of individuals have "missing"
+NSAMPLES=$(vcfsamplenames tmp/het_filter/genotypes.het_to_missing.vcf.gz | wc -l) && echo $NSAMPLES
+NMISSING25=$(echo -n $NSAMPLES | awk '{ $1=sprintf("%.0f",$1*0.25*2)} {print $1;}') && echo $NMISSING25
+NMISSING=$((echo $NSAMPLES-$NMISSING25/2 | bc -l) | awk '{ $1=sprintf("%.0f",$1)} {print $1;}') && echo $NMISSING
+
+zcat tmp/het_filter/genotypes.het_to_missing.vcf.gz \
+  | vcftools --recode --recode-INFO-all -c --vcf - --max-missing-count $NMISSING25 \
+  | bgzip -c > tmp/het_filter/genotypes.het_filter_miss_filter.vcf.gz
+tabix -p vcf tmp/het_filter/genotypes.het_filter_miss_filter.vcf.gz
+
+bcftools stats tmp/het_filter/genotypes.het_filter_miss_filter.vcf.gz \
+  > tmp/het_filter/genotypes.het_filter_miss_filter.vcf.stats
+
+# ---------------------------------------------------------------------------- #
+# Count number of missing data per site
+
+report_dir=tmp/2020-07-16-filter_stats
+
+mkdir -p ${report_dir}
+
+ln -sfr results/genotypes_samplesrenamed.vcf.gz \
+  ${report_dir}/pre_filter.vcf.gz
+
+ln -sfr results/genotypes_samplesrenamed.vcf.gz.tbi \
+  ${report_dir}/pre_filter.vcf.gz.tbi
+
+
+ln -sfr tmp/het_filter/genotypes.het_to_missing.vcf.gz \
+  ${report_dir}/het_filter.vcf.gz
+
+ln -sfr tmp/het_filter/genotypes.het_to_missing.vcf.gz.tbi \
+  ${report_dir}/het_filter.vcf.gz.tbi
+
+ln -sfr \
+  results/genotypes.het_filter_miss_filter.vcf.gz \
+  ${report_dir}/post_filter.vcf.gz
+
+ln -sfr \
+  results/genotypes.het_filter_miss_filter.vcf.gz.tbi \
+  ${report_dir}/post_filter.vcf.gz.tbi
+
+## Subset vcf to every nth line
+# Header only
+parallel 'bcftools view --header-only {1}/{2} > {1}/subsampled_{2.}' \
+  ::: ${report_dir} \
+  ::: pre_filter.vcf.gz het_filter.vcf.gz post_filter.vcf.gz
+
+## Print every nth line
+parallel 'bcftools view --no-header {1}/{2} \
+ | awk -v NUM=100 "NR % NUM == 0" >> {1}/subsampled_{2.}' \
+ ::: ${report_dir} \
+ ::: pre_filter.vcf.gz het_filter.vcf post_filter.vcf.gz
+
+bcftools query -l ${report_dir}/pre_filter.vcf.gz \
+  > ${report_dir}/samples
+
+# Print genotypes
+parallel 'bcftools query -f "[%GT\t]\n" {1}/subsampled_{2} > {1}/subsampled_{2.}_gt' \
+  ::: ${report_dir} \
+  ::: pre_filter.vcf het_filter.vcf post_filter.vcf
+
+# ---------------------------------------------------------------------------- #
+# Filter again
+
+# Remove individuals with high proportion of missing data
+
+# individuals with high proportion of missing data - REMOVE
+# (Eckart and Roddy data show the same)
+# AR171−7−littleb−p
+# AR54−1−bigB−m
+# AR209−1−bigB−m
+# AR171−6−littleb−p
+# AR136−1−bigB−m
+# AR65−1−bigB−m
+# AR23−1−bigB−m
+# AR95−1−bigB−m
+# SRR7028253_HE−117−bigB−m
+#
+# # Individuals with high proportion of heterozygous genotypes
+# # Known diploids (from Eckart’s list): - REMOVE
+# AR7−1−littleb−p
+# CGIn9−1−littleb−p
+# Mir8−6−littleb−p
+# Mir9−2−littleb−p
+# AR118−10−bigB−p
+# CaGr1A−1−bigB−m
+# U52−1−bigB−m
+# AdR11−2−bigB−p (B/b heterozygous)
+# CGIn1−1−littleb−p (B/b heterozygous)
+
+# Outgroup sample with high proportion of heterozygous genotypes – DO REMOVE
+# AR223−1−bigB−m
+
+# # Outgroup samples – DO NOT REMOVE
+# USP3-1-bigB-m
+# Copa2-1-bigB-m
+# Par1-1-bigB-m
+# AR112-1-bigB-p
+# AR142-1-bigB-m
+# SS1-2-bigB-m
+#
+#
+# # Known pools (from Eckart’s list) – DO NOT REMOVE
+# Toc5−1−bigB−m
+# Lad4−1−bigB−m
+# gem−1−bigB−m
+
+# The samples to be removed were added to tmp/remove_samples.txt
+ vcfsamplenames tmp/het_filter/genotypes.het_to_missing.vcf.gz \
+  | grep -cf tmp/remove_samples.txt
+wc -l tmp/remove_samples.txt
+
+mkdir -p tmp/2020-07-22-filter
+
+# First, we remove unwanted samples, then we filter each genotype by coverage,
+# then we turn each heterozygous genotype into "missing"
+bcftools view \
+  --samples-file ^tmp/remove_samples.txt \
+  results/genotypes_samplesrenamed.vcf.gz \
+  | bcftools +setGT - -- -t q -i "FMT/DP < 2" -n . \
+  | bcftools +setGT - -- -t q -i "FMT/GQ < 1 & FMT/DP < 10 " -n . \
+  | bcftools +setGT - -- -t ./x -n . \
+  | bcftools +setGT - -- -t q -i 'GT="het"' -n . \
+  | bgzip -c > tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz
+
+bcftools index tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz
+tabix -p vcf tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz
+
+bcftools stats tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz \
+  > tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz.stats &
+
+# Het counting
+zcat tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz \
+  | vcfhetcount > tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.het_count &# All field == 0 here
+zcat results/genotypes_samplesrenamed.vcf.gz \
+  | vcfhetcount > tmp/2020-07-22-filter/genotypes_samplesrenamed.vcf.het_count &
+
+#r
+# het <- read.table("tmp/het_filter/genotypes_samplesrenamed.vcf.het_count")
+# het <- t(het)
+# het <- write.table(het,
+#               file = "tmp/het_filter/het_count",
+#               col.names = FALSE,
+#               row.names = FALSE,
+#               quote = FALSE,
+#               sep = "\t")
+
+# Remove sites where more than 25% of individuals have "missing"
+NSAMPLES=$(bcftools query --list-samples tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz | wc -l) && echo $NSAMPLES
+NMISSING10=$(echo -n $NSAMPLES | awk '{ $1=sprintf("%.0f",$1*0.1*2)} {print $1;}') && echo $NMISSING10
+NMISSING=$((echo $NSAMPLES-$NMISSING10/2 | bc -l) | awk '{ $1=sprintf("%.0f",$1)} {print $1;}') && echo $NMISSING
+
+bcftools view -Oz -i 'F_MISSING<0.1' tmp/2020-07-22-filter/genotypes.het_to_missing.vcf.gz \
+  > tmp/2020-07-22-filter/genotypes.het_filter_miss_filter.vcf.gz
+tabix -p vcf tmp/2020-07-22-filter/genotypes.het_filter_miss_filter.vcf.gz
+
+bcftools stats tmp/2020-07-22-filter/genotypes.het_filter_miss_filter.vcf.gz \
+  > tmp/2020-07-22-filter/genotypes.het_filter_miss_filter.vcf.stats
+
+# ---------------------------------------------------------------------------- #
+# Count number of missing data per site
+
+vcf_dir=tmp/2020-07-22-filter
+
+mkdir -p ${vcf_dir}/stats
+ln -sfr results/genotypes_samplesrenamed.vcf.gz ${vcf_dir}/pre_filter.vcf.gz
+ln -sfr results/genotypes_samplesrenamed.vcf.gz.tbi ${vcf_dir}/pre_filter.vcf.gz.tbi
+
+## Subset vcf to every nth line
+# Header only
+parallel 'bcftools view --header-only {1}/{2} > {1}/stats/subsampled_{2.}' \
+  ::: ${vcf_dir} \
+  ::: pre_filter.vcf.gz genotypes.het_to_missing.vcf.gz genotypes.het_filter_miss_filter.vcf.gz
+
+## Print every 250th line
+parallel 'bcftools view --no-header {1}/{2} \
+ | awk -v NUM=250 "NR % NUM == 0" >> {1}/stats/subsampled_{2.}' \
+ ::: ${vcf_dir} \
+ ::: pre_filter.vcf.gz genotypes.het_to_missing.vcf.gz genotypes.het_filter_miss_filter.vcf.gz
+
+## Print genotypes
+parallel 'bcftools query -f "[%GT\t]\n" {1}/stats/subsampled_{2} > {1}/stats/subsampled_{2.}_gt' \
+  ::: ${vcf_dir} \
+  ::: pre_filter.vcf genotypes.het_to_missing.vcf genotypes.het_filter_miss_filter.vcf &
+
+## Print sample names
+parallel 'bcftools query -l {1}/{2} > {1}/stats/subsampled_{2}.samples' \
+  ::: ${vcf_dir} \
+  ::: pre_filter.vcf.gz genotypes.het_to_missing.vcf.gz genotypes.het_filter_miss_filter.vcf.gz &
+
+Rscript gt_graphs_filter.r
+
+# ---------------------------------------------------------------------------- #
+# Important results
+
+# Unfiltered genotype VCF (for Wurm lab archive)
+## Sample file
+## Stats file
+## Figures
+unlink results/genotypes.vcf.gz
+unlink results/genotypes.vcf.gz.tbi
+unlink results/genotypes.vcf.stats
+ln -sfr results/genotypes_samplesrenamed.vcf.gz results/unfiltered_genotypes.vcf.gz
+ln -sfr results/genotypes_samplesrenamed.vcf.gz.tbi results/unfiltered_genotypes.vcf.gz.tbi
+ln -sfr results/genotypes_samplesrenamed.vcf.stats results/unfiltered_genotypes.vcf.stats
+
+mkdir -p results/unfiltered_genotypes_report
+cp tmp/2020-07-16-filter_stats/*pdf results/unfiltered_genotypes_report
+cp tmp/2020-07-16-filter_stats/*csv results/unfiltered_genotypes_report
+
+# Filtered VCF (for Wurm lab archive)
+## Sample file
+## Stats file
+## Figures
+cp tmp/2020-07-22-filter/genotypes.het_filter_miss_filter.vcf.gz results/filtered_genotypes.vcf.gz
+cp tmp/2020-07-22-filter/genotypes.het_filter_miss_filter.vcf.gz.tbi results/filtered_genotypes.vcf.gz.tbi
+cp tmp/2020-07-22-filter/genotypes.het_filter_miss_filter.vcf.stats results/filtered_genotypes.vcf.stats
+
+mkdir -p results/filtered_genotypes_report
+cp tmp/2020-07-22-filter/stats/*pdf results/filtered_genotypes_report
+cp tmp/2020-07-22-filter/stats/*csv results/filtered_genotypes_report
+
+# Bad haploid VCF
+## Sample file
+## Stats file
