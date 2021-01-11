@@ -221,6 +221,9 @@ read.csv("results/diversity_per_region.csv", header = TRUE) -> div_measurements
 # Deal with populations
 #  richteri_1 is tagged as "1" in the masnucript
 #  richteri_2 is tagged as "2" in the masnucript
+# 34 input/richteri1_littleb.txt
+# 10 input/richteri2_littleb.txt
+# 62 input/invicta1_littleb.txt
 
 # Calculate aggregate value per population
 div_measurements %>%
@@ -229,10 +232,12 @@ div_measurements %>%
             total_region_size = sum(end - start),
             nucleotide_diversity = sum(nuc.diversity.within) / sum(end - start)) %>%
   mutate(population = recode(population,
-                             invicta_1 = "S. invicta/macdonaghi",
-                             richteri_1 = "S. richteri 1",
-                             richteri_2 = "S. richteri 2")) ->
+                             invicta_1 = "S. invicta/macdonaghi\n(n = 62 males)",
+                             richteri_1 = "S. richteri 1\n(n = 10 males)",
+                             richteri_2 = "S. richteri 2\n(n = 34 males)")) ->
   div_per_population
+
+font_size <- 11
 
 # Plot aggregate value as a bar plot
 div_per_population %>%
@@ -241,16 +246,24 @@ div_per_population %>%
   mutate(region = recode(region,
                          chr1_chr15 = "Chromosomes 1-15",
                          non_recombining = "Social chromosome supergene region")) %>%
-  ggplot(aes(x = population, y = nucleotide_diversity, label = round(nucleotide_diversity, 5))) +
+  ggplot(aes(x = population, y = nucleotide_diversity,
+            label = sprintf("%0.4f", round(nucleotide_diversity, 4)))) +
     geom_bar(stat = "identity", width = 0.5) +
     geom_text(position = position_stack(vjust = 1.05)) +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+    theme(axis.text.x = element_text(#angle = 0,
+                                     #hjust = 1, vjust = 1,
+                                     size = font_size,
+                                   colour = "black"),
+          axis.text.y = element_text(size = font_size, colour = "black"),
+          axis.title.x = element_text(size = font_size + 2,
+                                      margin = margin(b = 5, t = 10)),
+          axis.title.y = element_text(size = font_size + 2)) +
     xlab("Population") +
     ylab("Nucleotide diversity") -> pi_plot
 
 ggsave(pi_plot, file="results/nucleotide_diversity_nr.pdf",
-width = 4, height = 4)
+width = 6, height = 5)
 
 # Plot aggregate value as a bar plot
 # Compares non-recombining region with chromosomes 1 to 15
@@ -325,3 +338,63 @@ wilcox.test(div_per_population_wide_nr$invicta_1,
 
 ```
 
+## Rename some samples in the VCF
+
+A set of samples (AR164-bigB, SRR7028251, SRR7028249, SRR7028250,  SRR7028257 and SRR7028261) should be relabelled to littleb, and their colony social status should be changed from "-m". Samples AR66 and AR142 need to be removed.
+
+```sh
+
+cat samplesrename
+# AR164-6-bigB-p AR164-6-littleb-p
+# SRR7028251_AL-149-bigB-m SRR7028251_AL-149-littleb-p
+# SRR7028249_AL-145-bigB-m SRR7028249_AL-145-littleb-p
+# SRR7028250_AL-141-bigB-m SRR7028250_AL-141-littleb-p
+# SRR7028257_AL-158-bigB-m SRR7028257_AL-158-littleb-p
+# SRR7028261_AL-139-bigB-m SRR7028261_AL-139-littleb-p
+# AR18-1-littleb-p AR187-1-littleb-p
+# AR187-1-littleb-p AR18-1-littleb-p
+
+bcftools reheader -s samplesrename tmp/gt.vcf.gz > tmp/gt_renamed.vcf.gz
+tabix -fp vcf tmp/gt_renamed.vcf.gz
+
+```
+
+To make sure it worked, make list of samples in old and new VCF:
+
+```sh
+
+bcftools query -l tmp/gt.vcf.gz > tmp/original_samples
+bcftools query -l tmp/gt_renamed.vcf.gz > tmp/renamed_samples
+
+```
+
+Then use R to compare those list of samples to the expected in `samplesrename`.
+
+```r
+
+# list of samples in old and new VCF
+original_samples <- as.character(read.table("tmp/original_samples")$V1)
+renamed_samples  <- as.character(read.table("tmp/renamed_samples")$V1)
+# Table used to rename samples
+rename_table     <- read.table("samplesrename")
+
+# Are the samples changed to the expected value in the new VCF?
+to_change <- match(rename_table$V1, original_samples)
+stopifnot(renamed_samples[to_change] == rename_table$V2)
+
+# Is any other sample changed? (it should not be)
+stopifnot(original_samples[-to_change] == renamed_samples[-to_change])
+
+```
+
+Then move to results.
+
+```sh
+
+mv tmp/gt_renamed.vcf.gz results/gt.vcf.gz
+mv tmp/gt_renamed.vcf.gz.tbi results/gt.vcf.gz.tbi
+
+mv tmp/gt.vcf.gz tmp/gt_original_sample_names.vcf.gz
+mv tmp/gt.vcf.gz.tbi tmp/gt_original_sample_names.vcf.gz.tbi
+
+```
