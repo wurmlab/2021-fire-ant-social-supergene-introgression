@@ -1,0 +1,118 @@
+
+
+# install libraries
+```{r}
+source("http://bioconductor.org/biocLite.R")
+install.packages("MASS")
+BiocManager::install("SNPRelate")
+BiocManager::install("gdsfmt")
+
+# load libraries
+library(gdsfmt)
+library(SNPRelate)
+library(MASS)
+library(tidyverse)
+```
+#Input and pca calculation
+
+```{r}
+inputfile <- "input/busco4.merged.filtered.SNP.genotypes.MaxMissing25.noOGs.chr16nr.subset.to.mRNA-GFF-used-in-phylo.vcf"
+
+# read in data and title, convert to gds
+title <- paste("PCA_supergene")
+input.gds <- gsub(".vcf", ".gds", inputfile)
+snpgdsVCF2GDS(inputfile, input.gds, method = "biallelic.only")
+snpgdsSummary(input.gds)
+genofile <- snpgdsOpen(input.gds)
+
+# PCA
+pca <- snpgdsPCA(genofile, num.thread = 8, autosome.only = FALSE)
+pc.percent <- pca$varprop * 100
+pc.percent.rounded <- round(pc.percent, 2)
+
+# Store values of PC's
+PCA1 <- head(pc.percent.rounded, 1)
+PCA2 <- tail((head(pc.percent.rounded, 2)), 1)
+PCA3 <- tail((head(pc.percent.rounded, 3)), 1)
+PCA4 <- tail((head(pc.percent.rounded, 4)), 1)
+PCA5 <- tail((head(pc.percent.rounded, 5)), 1)
+PCA6 <- tail((head(pc.percent.rounded, 6)), 1)
+PCA7 <- tail((head(pc.percent.rounded, 7)), 1)
+PCA8 <- tail((head(pc.percent.rounded, 8)), 1)
+pcas <- paste(
+  "PCAs 1-8: ", PCA1, " , ", PCA2, " , ", PCA3, " , ", PCA4,
+  " , ", PCA5, " , ", PCA6, " , ", PCA7, " , ", PCA8,
+  sep = ""
+)
+print(pcas)
+
+# read sample ID and grouping information for all samples in the VCF
+# (list with same order as VCF sample list)
+
+sample.id <- read.gdsn(index.gdsn(genofile, "sample.id"))
+
+
+## use this if plotting the supergene type (bigB, littleb, outgroup),
+# i.e. 3 colours
+# title <- paste("PCA_supergene")
+pop_code_super <- scan("input/pca_supergenevariant.txt", what = character())
+# col.list <-c("black","deepskyblue2","red")
+
+
+## use this if plotting by species, i.e. 6 colours
+title <- paste("PCA_supergene_byspecies")
+pop_code <- scan("input/pca_populations.txt", what = character())
+col.list <- c("bisque4", "coral4", "blue", "cyan3", "red", "darkorange2")
+
+
+# collect Eigenvectors/PCs
+tab <- data.frame(
+  sample.id = pca$sample.id,
+  pop = factor(pop_code)[match(pca$sample.id, sample.id)],
+  super = factor(pop_code_super)[match(pca$sample.id, sample.id)],
+  EV1 = pca$eigenvect[, 1], # the first eigenvector
+  EV2 = pca$eigenvect[, 2], # the second eigenvector
+  EV3 = pca$eigenvect[, 3], # the 3rd eigenvector
+  EV4 = pca$eigenvect[, 4], # the 4 eigenvector
+  EV5 = pca$eigenvect[, 5], # the 5 eigenvector
+  EV6 = pca$eigenvect[, 6], # the 6 eigenvector
+  EV7 = pca$eigenvect[, 7], # the 7 eigenvector
+  EV8 = pca$eigenvect[, 8], # the 8 eigenvector
+  stringsAsFactors = FALSE
+)
+
+# output PCs 1-8
+# png(paste(title,"_PC1-8.png",sep=""),width = 2500, height = 2500, res = 100)
+# lbls <- paste("PC", 1:8, "\n", format(pc.percent[1:8], digits=4), "%", sep="")
+# pairs(pca$eigenvect[,1:8], col=col.list[as.integer(tab$pop)], labels=lbls)
+# text(tab$EV2, tab$EV1, tab$sample.id, cex=0.6, pos=2, col="blue")
+
+
+# create plot limits based on min/max in the data
+EV1min <- (min(pca$eigenvect[, 1]) - 0.02)
+EV1max <- (max(pca$eigenvect[, 1]) + 0.02)
+EV2min <- (min(pca$eigenvect[, 2]) - 0.02)
+EV2max <- (max(pca$eigenvect[, 2]) + 0.02)
+EV3min <- (min(pca$eigenvect[, 3]) - 0.02)
+EV3max <- (max(pca$eigenvect[, 3]) + 0.02)
+EV4min <- (min(pca$eigenvect[, 4]) - 0.02)
+EV4max <- (max(pca$eigenvect[, 4]) + 0.02)
+EV5min <- (min(pca$eigenvect[, 5]) - 0.02)
+EV5max <- (max(pca$eigenvect[, 5]) + 0.02)
+EV6min <- (min(pca$eigenvect[, 6]) - 0.02)
+EV6max <- (max(pca$eigenvect[, 6]) + 0.02)
+EV7min <- (min(pca$eigenvect[, 7]) - 0.02)
+EV7max <- (max(pca$eigenvect[, 7]) + 0.02)
+EV8min <- (min(pca$eigenvect[, 8]) - 0.02)
+EV8max <- (max(pca$eigenvect[, 8]) + 0.02)
+
+
+# Adding labeling column for subsequent plot
+output <- "tmp/"
+write.csv(tab,
+  file = paste(output, "editing_outgroups.csv", sep = ""),
+  col.names = TRUE
+)
+
+dev.off()
+```

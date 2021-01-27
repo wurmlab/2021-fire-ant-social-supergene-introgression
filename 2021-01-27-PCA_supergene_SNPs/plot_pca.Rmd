@@ -1,0 +1,85 @@
+---
+title: "PCA plot"
+author: "Gabriel Luis Hernandez"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+libraries <- c("ggplot2", "gdsfmt", "SNPRelate", "MASS", "tidyverse", "ggtext", "ggrepel")
+for (lib in libraries) {
+  if (require(package = lib, character.only = TRUE)) {
+    print("Successful")
+  } else {
+    print("Installing")
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {
+      install.packages("BiocManager")
+    }
+    BiocManager::install(lib)
+    library(lib, character.only = TRUE)
+  }
+}
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+updated_tab <- read.csv("input/outgroup_edited.csv", header = TRUE, fill = TRUE)
+
+Xlabs <- paste("PC2 ", PCA2, "%", sep = "")
+Ylabs <- paste("PC1 ", PCA1, "%", sep = "")
+```
+
+# pca plot
+```{r echo=FALSE, warning=FALSE}
+pca_plot <- ggplot(data = updated_tab %>% arrange(desc(pop)), aes(x = EV2, y = EV1, )) +
+  geom_point(aes(color = pop, stroke = 0.9, shape = super),
+    alpha = 0.6, size = 2
+  ) +
+  guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+  labs(shape = "Supergene variant", color = "Species", x = Xlabs, y = Ylabs)
+
+pca_plot_print <- pca_plot + scale_shape_manual(values = c(21, 24, 3, 22)) +
+  scale_colour_manual(
+    values = c(
+      "#000000", "#ff0600", "#d87904", "#891bce",
+      "#f71ae6", "#2bc100"
+    ),
+    labels = c(
+      "S. 'AdRX'", "*S. interrupta*", "*S. invicta*",
+      "*S. macdonaghi*", "*S. megergates*", "*S. richteri*"
+    )
+  ) +
+  theme(legend.text = element_markdown(size = 8), legend.title = element_text(size = 9))
+
+pca_plot_print
+```
+
+# pca with labels
+```{r echo=FALSE, warning=FALSE}
+pc12_plot <- ggplot(data = updated_tab %>% arrange(desc(pop)), aes(x = EV2, y = EV1, )) +
+  geom_point(aes(color = pop, stroke = 0.9, shape = super),
+    alpha = 0.6, size = 2
+  ) +
+  guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+  labs(shape = "Supergene variant", color = "Species", x = Xlabs, y = Ylabs)
+
+pc12_plot_print <- pc12_plot + scale_shape_manual(values = c(21, 24, 3, 22)) +
+  scale_colour_manual(values = c(
+    "#000000", "#ff0600", "#d87904", "#891bce",
+    "#f71ae6", "#2bc100"
+  ), labels = c(
+    "S. 'AdRX'",
+    "*S. interrupta*", "*S. invicta*", "*S. macdonaghi*",
+    "*S. megergates*", "*S. richteri*"
+  )) +
+  theme(legend.text = element_markdown(size = 8), legend.title = element_text(size = 9)) +
+  geom_text(aes(label = ifelse(EV9 == 1, as.character(sample.id), ""), colour = pop),
+    hjust = 1.1, vjust = 0, size = 2, check_overlap = FALSE, angle = 0
+  ) +
+  geom_text(aes(label = ifelse(EV9 == 2, as.character(sample.id), ""), colour = pop),
+    hjust = -0.1, vjust = 0.9, size = 2, check_overlap = FALSE, angle = -14
+  )
+
+pc12_plot_print
+
+dev.off()
+```
