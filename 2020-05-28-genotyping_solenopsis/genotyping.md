@@ -2,13 +2,13 @@
 
 ## Aim
 
-Genotype a group of _Solenopsis_ samples, including _Solenopsis invicta_, _S. richteri_,  _S. macdonaghi_, as well as two outgroup clades.
+Genotype a group of _Solenopsis sp_ sample.
 
 ## Data
 
-Many of the samples were collected and sequenced by Eckart Stolle (and colleagues) from the native South American species range (Argentina, Brazil and Uruguay). DNA was extracted from each sample and sequenced (Illumina XXX).
+Many of the samples were collected and sequenced by Eckart Stolle (and colleagues) from the native South American species range (Argentina, Brazil and Uruguay). DNA was extracted from each sample and sequenced (Illumina HiSeq).
 
-We added to these samples a data set produced in the lab of Laurent Keller () and another in the lab of Eyal Privman ().
+(((We added to these samples a data set produced in the lab of Laurent Keller () and another in the lab of Eyal Privman ().))) Maybe this in main project README
 
 Sequenced reads were filtered (with XXX) and aligned to the reference genome XXX with the aligner XXX.
 
