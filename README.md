@@ -1,6 +1,6 @@
 # Recurring adaptive introgression of a supergene that determines social organisation.
 
-## Introduccion
+## Introduction
 We used genomes of haploid male fire ants to create coalescent-based phylogenies of _Solenopsis_ species and of their supergene region. We show that the supergene variant responsible for multiple-queen colonies and associated phenotypes evolved in one species and repeatedly spread across species through introgressive hybridization events. This highlights how supergene architecture can enable a complex adaptive phenotype to permeate species boundaries.
 
 ## Samples
