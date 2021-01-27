@@ -7,7 +7,7 @@ We used genomes of haploid male fire ants to create coalescent-based phylogenies
 We genotype a group of _Solenopsis_ samples, including _Solenopsis invicta_, _S. richteri_,  _S. macdonaghi_, _S.interrupta_, _S. megergates_, _S. pusillignis_, and _S. saevissima_. Eckart Stolle (and colleagues) collected 88 colonies from South America. We sequenced on Illumina HiSeq and stored the resulting 107 samples in the BioProject PRJNA685290. In addition, we used 260 samples from Bioprojects PRJNA396161, PRJNA542606, PRJNA421367, PRJNA450756, PRJNA182127, SRR621118, SRX021921.
 
 ## Genotyping
-See directory 2020-5-28-genotyping_solenopsis
+See directory 2020-05-28-genotyping_solenopsis
 
 ## Coalescent-based phylogenetic inference
 ### BUSCO genes
