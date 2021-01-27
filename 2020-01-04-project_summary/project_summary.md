@@ -13,4 +13,4 @@ See directory 202X-XX-XX-Genotyping
 ### BUSCO genes
 
 ## Nucleotide diversity
-See directory 20201-01-04-pi
+See directory 2021-01-04-pi
