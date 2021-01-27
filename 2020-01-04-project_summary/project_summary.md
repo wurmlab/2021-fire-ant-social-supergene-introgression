@@ -10,7 +10,7 @@ We genotype a group of _Solenopsis_ samples, including _Solenopsis invicta_, _S.
 See directory 202X-XX-XX-Genotyping
 
 ## Coalescent-based phylogenetic inference
-# BUSCO genes
+### BUSCO genes
 
 ## Nucleotide diversity
 See directory 20201-01-04-pi
