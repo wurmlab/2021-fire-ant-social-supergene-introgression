@@ -96,13 +96,11 @@ cp tmp/invicta1_littleb.txt results
 ```sh
 
 ln -sfr \
-  input/gng20170922.busco4.complete.extended1000bp.coordinates-fixed.merged.bed \
+  input/gng20170922.busco4.complete.chr16nr.extended1000bp.coordinates-fixed.merged.bed \
   tmp/regions.bed
 
 
-conda activate popgenome
-
-
+conda activate 2020-05-env
 for p in richteri1 richteri2 invicta1; do
 
   bcftools view -H results/${p}.vcf.gz \
@@ -110,6 +108,7 @@ for p in richteri1 richteri2 invicta1; do
 
 done
 
+conda activate popgenome
 
 for p in richteri1 richteri2 invicta1; do
 
@@ -154,20 +153,24 @@ add_pi_zero <- function(df, region_df) {
   # Find the regions that are not present in the measurements
   absent_regions <- ! bed_regions %in% regions_in_df
 
-  absent_regions <- cbind(
-    region_df[absent_regions, ],
-    matrix(NA, nrow = sum(absent_regions), ncol = ncol(df) - 3)
-  )
+  if (any(absent_regions)) {
+    absent_regions <- cbind(
+      region_df[absent_regions, ],
+      matrix(NA, nrow = sum(absent_regions), ncol = ncol(df) - 3)
+    )
 
-  colnames(absent_regions) <- colnames(df)
+    colnames(absent_regions) <- colnames(df)
 
-  # Make some stats 0
-  absent_regions$nuc.diversity.within <- 0
-  absent_regions$n.segregating.sites  <- 0
-  absent_regions$nuc.diversity        <- 0
+    # Make some stats 0
+    absent_regions$nuc.diversity.within <- 0
+    absent_regions$n.segregating.sites  <- 0
+    absent_regions$nuc.diversity        <- 0
+
+    df <- rbind(df, absent_regions)
+  }
 
   # Return full table
-    return(rbind(df, absent_regions))
+    return(df)
 }
 
 inv <- add_pi_zero(inv, busco_regions)
@@ -219,8 +222,8 @@ library(tidyverse)
 read.csv("results/diversity_per_region.csv", header = TRUE) -> div_measurements
 
 # Deal with populations
-#  richteri_1 is tagged as "1" in the masnucript
-#  richteri_2 is tagged as "2" in the masnucript
+#  richteri_1 is tagged as "1" in the manuscript
+#  richteri_2 is tagged as "2" in the manuscript
 # 34 input/richteri1_littleb.txt
 # 10 input/richteri2_littleb.txt
 # 62 input/invicta1_littleb.txt
@@ -265,31 +268,9 @@ div_per_population %>%
 ggsave(pi_plot, file="results/nucleotide_diversity_nr.pdf",
 width = 6, height = 5)
 
-# Plot aggregate value as a bar plot
-# Compares non-recombining region with chromosomes 1 to 15
-div_per_population %>%
-  # mutate(class = paste(population, region)) %>%
-  filter(region != "chr16_recombining") %>%
-  mutate(region = recode(region,
-                         chr1_chr15 = "Chromosomes 1-15",
-                         non_recombining = "Social chromosome supergene region")) %>%
-  ggplot(aes(x = population, y = nucleotide_diversity)) +
-    geom_bar(stat = "identity") +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
-    xlab("Population") +
-    ylab("Nucleotide diversity") -> pi_plot
-
-ggsave(pi_plot, file="results/nucleotide_diversity.pdf")
-
-# Writes out aggregate values to table
-div_per_population %>%
-  write.csv(file = "results/diversity_per_region_summary.csv",
-            quote = FALSE,
-            row.names = FALSE)
-
 div_per_population %>%
   filter(region == "non_recombining") %>%
+  mutate(population = gsub("\n", " ", population)) %>%
   write.csv(file = "results/diversity_per_region_summary_nr.csv",
             quote = FALSE,
             row.names = FALSE)
@@ -298,43 +279,9 @@ div_per_population %>%
 div_per_population %>%
   pivot_wider(names_from = population, values_from = nucleotide_diversity) -> div_per_population_diffs
 
-div_per_population_diffs$percent_1 <- round(100 * div_per_population_diffs$`S. richteri 1` / div_per_population_diffs$`S. invicta/macdonaghi`)
-div_per_population_diffs$percent_2 <- round(100 * div_per_population_diffs$`S. richteri 2` / div_per_population_diffs$`S. invicta/macdonaghi`)
-# 68 for S. richteri 1 and 100 for S. richteri 2
+div_per_population_diffs$percent_1 <- round(100 * div_per_population_diffs$`S. richteri 1\n(n = 10 males)` / div_per_population_diffs$`S. invicta/macdonaghi\n(n = 62 males)`)
 
-
-## Histogram
-div_measurements %>%
-  # mutate(class = paste(population, region)) %>%
-  mutate(region = recode(region,
-                         chr1_chr15 = "Chromosomes 1-15",
-                         non_recombining = "Social chromosome supergene region",
-                         chr16_recombining = "Social chromosome recombining region")) %>%
-  ggplot(aes(x = nuc.diversity)) +
-    geom_histogram(binwidth = 0.0005) +
-    facet_grid(rows = vars(population), cols = vars(region)) +
-    theme_bw() +
-    xlab("Nucleotide diversity") -> pi_hist
-
-ggsave(pi_hist, file="results/nucleotide_diversity_histogram.pdf")
-
-
-div_measurements %>%
-  mutate(region_size = end - start) %>%
-  select(1:3, region_size, region, population, nuc.diversity) %>%
-  pivot_wider(names_from = population, values_from = nuc.diversity) ->
-  div_per_population_wide
-
-div_per_population_wide %>%
-  filter(region == "non_recombining") -> div_per_population_wide_nr
-
-wilcox.test(div_per_population_wide_nr$invicta_1,
-            div_per_population_wide_nr$richteri_1,
-            paired=TRUE)
-
-wilcox.test(div_per_population_wide_nr$invicta_1,
-            div_per_population_wide_nr$richteri_2,
-            paired=TRUE)
+div_per_population_diffs$percent_2 <- round(100 * div_per_population_diffs$`S. richteri 2\n(n = 34 males)` / div_per_population_diffs$`S. invicta/macdonaghi\n(n = 62 males)`)
 
 ```
 
@@ -373,7 +320,7 @@ Then use R to compare those list of samples to the expected in `samplesrename`.
 ```r
 
 # list of samples in old and new VCF
-original_samples <- as.character(read.table("tmp/original_samples")$V1)
+original_samples <- as.character(read.table("tmp/app")$V1)
 renamed_samples  <- as.character(read.table("tmp/renamed_samples")$V1)
 # Table used to rename samples
 rename_table     <- read.table("samplesrename")
@@ -387,14 +334,30 @@ stopifnot(original_samples[-to_change] == renamed_samples[-to_change])
 
 ```
 
+Remove two samples.
+
+```sh
+
+bcftools view \
+  --samples ^AR66-5-bigB-p,AR142-1-bigB-m-1 \
+  tmp/gt_renamed.vcf.gz \
+  | bcftools view --min-ac=1 - \
+  | bgzip -c > tmp/gt_renamed.samples_removed.vcf.gz
+tabix -p vcf tmp/gt_renamed.samples_removed.vcf.gz
+
+```
+
 Then move to results.
 
 ```sh
 
-mv tmp/gt_renamed.vcf.gz results/gt.vcf.gz
-mv tmp/gt_renamed.vcf.gz.tbi results/gt.vcf.gz.tbi
+mv tmp/gt_renamed.samples_removed.vcf.gz results/gt.vcf.gz
+mv tmp/gt_renamed.samples_removed.vcf.gz.tbi results/gt.vcf.gz.tbi
 
 mv tmp/gt.vcf.gz tmp/gt_original_sample_names.vcf.gz
 mv tmp/gt.vcf.gz.tbi tmp/gt_original_sample_names.vcf.gz.tbi
+
+# rm tmp/gt_renamed.vcf.gz
+# rm tmp/gt_renamed.vcf.gz.tbi
 
 ```
