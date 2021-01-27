@@ -1,0 +1,74 @@
+---
+title: "Samples' collection map"
+author: "Gabriel Luis Hernandez"
+output:
+  pdf_document: default
+  html_document: default
+---
+# Load libraries
+
+```{r echo=FALSE,  message=FALSE, warning=FALSE}
+libraries <- c("ggplot2", "ggmap", "scales", "dplyr", "ggtext")
+for (lib in libraries) {
+  if (require(package = lib, character.only = TRUE)) {
+    print("Successful")
+  } else {
+    print("Installing")
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {
+      install.packages("BiocManager")
+    }
+    BiocManager::install(lib)
+    library(lib, character.only = TRUE)
+  }
+}
+
+output <- "tmp/"
+```
+
+# File input and set up
+
+```{r echo=FALSE, message=FALSE}
+inputall <- read.csv("input/Coordinates_introgress.csv", header = TRUE, fill = TRUE)
+
+mylocation2 <- c(left = -73, bottom = -38, right = -37, top = -10)
+map4 <- get_stamenmap(mylocation2, zoom = 5, maptype = "toner-lite")
+```
+
+# Create map
+
+```{r echo=FALSE, warning=FALSE}
+mapall13 <- (ggmap(map4, extent = "device") + geom_jitter(
+  data = inputall %>%
+    arrange(desc(Species)),
+  aes(x = Longitude, y = Latitude, color = Species, shape = Supergene_Variant, stroke = 0.9),
+  alpha = 0.6, size = 2, width = 0.6, height = 0.4
+) +
+  guides(fill = FALSE, alpha = FALSE, size = FALSE) + labs(shape = "Supergene variant")
+)
+
+col_map <- mapall13 + scale_shape_manual(values = c(15, 17, 16)) +
+  scale_colour_manual(
+    values = c(
+      "#000000", "#ff0600", "#d87904", "#891bce",
+      "#f71ae6", "#0700ff", "#2bc100", "#2c88f9"
+    ),
+    labels = c(
+      "S. 'AdRX'", "*S. interrupta*", "*S. invicta*", "*S. macdonaghi*",
+      "*S. megergates*", "*S. pusillignis*", "*S. richteri*", "*S. saevissima*"
+    )
+  ) +
+  theme(legend.text = element_markdown(size = 8), legend.title = element_text(size = 9)) +
+  theme(plot.margin = grid::unit(c(0, 0, 0, 0), "mm"))
+
+col_map
+```
+
+# Safe map
+
+```{r echo=FALSE, warning=FALSE}
+output <- "tmp/"
+ggsave(file = paste(output, "coll_map_auto.png", sep = ""), height = 183,
+       width = 183, units = "mm", type = "cairo", col_map)
+ggsave(file = paste(output, "coll_map_auto.pdf", sep = ""), height = 183,
+       width = 183, units = "mm", col_map)
+```
