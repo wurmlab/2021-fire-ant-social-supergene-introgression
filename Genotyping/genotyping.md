@@ -38,11 +38,10 @@ The reference genome is available here:
 
 ```sh
 
-REF=/data/home/btw586/db/genomic/S_invicta/2017-09-22-Si_gng20170922_eckart/\
-gng20170922wFex.fa
+REF=/data/home/btw586/db/genomic/S_invicta/2017-09-22-Si_gng20170922_eckart/gng20170922wFex.fa
 
 ```
-
+{{Should this have full paths?}}
 The reads are available here:
 
 ```sh
@@ -53,8 +52,7 @@ The alignments are available here:
 
 ```sh
 
-ls -1 -d /data/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta/\
-2020-05-bams_388_eckart/bams_all_renamed/*.bam > tmp/bam.list
+ls -1 -d /data/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta/2020-05-bams_388_eckart/bams_all_renamed/*.bam > tmp/bam.list
 
 BAMLST=tmp/bam.list
 
@@ -66,7 +64,7 @@ Most of the samples (including all ingroup samples) consist of haploid male ants
 
 ## Overview of protocol
 
-We use freebayes to call variants among the samples. This is done in two steps:
+We use Freebayes (v1.2.0) to call variants among the samples. This is done in two steps:
 1. Identification of variant sites
 2. Genotyping of the variant sites
 
@@ -88,7 +86,7 @@ grep -cv ":1-1$" $REGIONS
 
 ```
 
-This was done with freebayes, following the parameters below, parallelised over each line of the `$REGIONS` file.
+This was done with Freebayes, following the parameters below, parallelised over each line of the `$REGIONS` file.
 
 ```sh
 
