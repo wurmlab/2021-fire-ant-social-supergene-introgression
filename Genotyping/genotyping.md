@@ -7,7 +7,7 @@ Genotype a group of _Solenopsis sp_ sample.
 ## Data
 
 Sequenced reads were filtered with Skewer (v0.2.2).
-minimum length of 80 for 100 bp reads and of 100 for 150 bp reads (--min $L)
+Minimum length of 80 for 100 bp reads and of 100 for 150 bp reads (--min $L)
 
 ```sh
 skewer -m pe  \
@@ -38,28 +38,23 @@ The reference genome is available here:
 
 ```sh
 
-REF=/data/home/btw586/db/genomic/S_invicta/2017-09-22-Si_gng20170922_eckart/gng20170922wFex.fa
+REF=/data/home/btw586/db/genomic/S_invicta/2017-09-22-Si_gng20170922_eckart/\
+gng20170922wFex.fa
 
 ```
 
 The reads are available here:
 
 ```sh
-
 ls /data2/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta
-
 ```
 
 The alignments are available here:
 
 ```sh
 
-ls /data/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta/2020-05-bams_388_eckart/bams_all_renamed
-
-# @PG     ID:bwa  PN:bwa  CL:bwa-mem2 mem -t 30 -B 6 -E 2 -L25,25 -U 50 -R @RG\tID:AdR11-2-bigB-p\tSM:Sol_AdR11-2-bigB-p_clade9A_708508\tPL:IlluminaHiSeq4000\tLB:TruSeq\tPU:clade9A\tDT:2015-2018 -v 1 -T 50 -h 4,200 -a -V -Y -M /dev/shm/ref/gng20170922wFex.fa mappingsamples/Sol_AdR11-2-bigB-p_clade9A_708508.R1.fq.gz mappingsamples/Sol_AdR11-2-bigB-p_clade9A_708508.R1.fq.gz    VN:2.0pre2
-# @PG     ID:sambamba     CL:view --sam-input --with-header --ref-filename=/dev/shm/ref/gng20170922wFex.fa --format=bam -l 0 /dev/stdin   PP:bwa  VN:0.6.7
-
-ls -1 -d /data/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta/2020-05-bams_388_eckart/bams_all_renamed/*.bam > tmp/bam.list
+ls -1 -d /data/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta/\
+2020-05-bams_388_eckart/bams_all_renamed/*.bam > tmp/bam.list
 
 BAMLST=tmp/bam.list
 
@@ -67,7 +62,7 @@ BAMLST=tmp/bam.list
 
 There are bams for 388 samples.
 
-Most of the samples (including all ingroup samples) consist of haploid male ants. There are XXX exceptions, which consist of pools of diploid workers. These exceptions form some of the outgroup samples.
+Most of the samples (including all ingroup samples) consist of haploid male ants. There are three exceptions, which consist of pools of diploid workers. These exceptions form some of the outgroup samples.
 
 ## Overview of protocol
 
