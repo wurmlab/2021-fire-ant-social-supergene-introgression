@@ -6,13 +6,33 @@ Genotype a group of _Solenopsis sp_ sample.
 
 ## Data
 
-Sequenced reads were filtered with Skewer (v0.2.2)
+Sequenced reads were filtered with Skewer (v0.2.2).
+minimum length of 80 for 100 bp reads and of 100 for 150 bp reads (--min $L)
 
-`--mean-quality 20, --end-quality 15, minimum length of 80 for 100 bp reads and of 100 for 150 bp reads; removing degenerate reads`
+```sh
+skewer -m pe  \
+$INPATH/$NAME.sra_1.fastq \
+$INPATH/$NAME.sra_2.fastq \
+-x $FWD_ADAPTERS \
+-y $REV_ADAPTERS \
+--mean-quality $AVG_QUAL_THRESHOLD \
+--end-quality $END_QUAL_THRESHOLD \
+--min $L \
+-n \
+-r 0.1 \
+--compress \
+--format auto \
+-t $CPUs \
+--output $OUTPUTFOLDER/$NAME
+
+```
+
 
 We used bwa-mem2 (v2.0pre2) to align reads to the reference genome Si_gnGA.
 
-`-B 6 -E 2 -L25,25 -U 50 -T 50 -h 4,200 -a -V -Y -M`
+```sh
+-B 6 -E 2 -L25,25 -U 50 -T 50 -h 4,200 -a -V -Y -M
+```
 
 The reference genome is available here:
 
