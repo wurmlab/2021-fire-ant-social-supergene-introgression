@@ -1,8 +1,6 @@
 # Genotyping
 
-## Aim
-
-Genotype a group of _Solenopsis sp_ sample.
+here we summarise the  process of genotyping the _Solenopsis sp_ samples. 
 
 ## Data
 
