@@ -1,6 +1,6 @@
 # Genotyping
 
-here we summarise the  process of genotyping the _Solenopsis sp_ samples. 
+Here we summarise the  process of genotyping the _Solenopsis sp_ samples. 
 
 ## Data
 
