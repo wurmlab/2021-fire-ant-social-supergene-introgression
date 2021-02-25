@@ -6,11 +6,13 @@ Genotype a group of _Solenopsis sp_ sample.
 
 ## Data
 
-Many of the samples were collected and sequenced by Eckart Stolle (and colleagues) from the native South American species range (Argentina, Brazil and Uruguay). DNA was extracted from each sample and sequenced (Illumina HiSeq).
+Sequenced reads were filtered with Skewer (v0.2.2)
 
-(((We added to these samples a data set produced in the lab of Laurent Keller () and another in the lab of Eyal Privman ().))) Maybe this in main project README
+`--mean-quality 20, --end-quality 15, minimum length of 80 for 100 bp reads and of 100 for 150 bp reads; removing degenerate reads`
 
-Sequenced reads were filtered (with XXX) and aligned to the reference genome XXX with the aligner XXX.
+We used bwa-mem2 (v2.0pre2) to align reads to the reference genome Si_gnGA.
+
+`-B 6 -E 2 -L25,25 -U 50 -T 50 -h 4,200 -a -V -Y -M`
 
 The reference genome is available here:
 
