@@ -8,19 +8,19 @@ Sequenced reads were filtered with Skewer (v0.2.2), with minimum length of 80 fo
 
 ```sh
 skewer -m pe  \
-$INPATH/$NAME.sra_1.fastq \
-$INPATH/$NAME.sra_2.fastq \
--x foward_adapters.txt \
--y reverse_adapters.txt \
---mean-quality 20 \
---end-quality 15 \
---min $L \
--n \
--r 0.1 \
---compress \
---format auto \
--t $CPUs \
---output $OUTPUTFOLDER/$NAME
+  $INPATH/$NAME.sra_1.fastq \
+  $INPATH/$NAME.sra_2.fastq \
+  -x foward_adapters.txt \
+  -y reverse_adapters.txt \
+  --mean-quality 20 \
+  --end-quality 15 \
+  --min $L \
+  -n \
+  -r 0.1 \
+  --compress \
+  --format auto \
+  -t $CPUs \
+  --output $OUTPUTFOLDER/$NAME
 
 ```
 
@@ -29,6 +29,7 @@ We used bwa-mem2 (v2.0pre2) to align reads to the reference genome Si_gnGA.
 ```sh
 REF=gng20170922wFex.fa
 bwa-mem2 mem -t $CPUs -B 6 -E 2 -L25,25 -U 50 -R $READGROUPHEADER -v 1 -T 50 -h 4,200 -a -V -Y -M $REF $SAMPLE.R1.fq.gz $SAMPLE.R2.fq.gz
+
 ```
 
 ## Overview of protocol
@@ -48,18 +49,19 @@ The reference genome was divided into regions, over which the steps were paralle
 # Get region
 #   And region size
 REGIONS=regions.txt
+
 ```
 
 This was done with Freebayes, following the parameters below, parallelised over each line of the `$REGIONS` file.
 
 ```sh
 
-REGION=$(sed -n "1p" $REGIONS) # The first line of the region file
+mkdir site
+
+REGION=$(sed -n "1p" $REGIONS) # The first (or nth) line of the region file
 MINALTFRAC=0.40
 MINALTN=4
 MINCOV=4
-
-mkdir site
 
 freebayes --region REGION \
   --fasta-reference $REF \
@@ -237,13 +239,12 @@ rm -f fused_genotypes.vcf
 
 ```
 
-We filter each genotype by coverage, and turn each heterozygous genotype into "missing".
-We removed 18 samples for which more than 25% of variant sites could not be genotyped, and the nine others had particularly high numbers of heterozygous sites indicating that they are likely diploid.
+We filter each genotype by coverage, and turn each heterozygous genotype into "missing". We removed 18 samples for which more than 25% of variant sites could not be genotyped, and the nine others had particularly high numbers of heterozygous sites indicating that they are likely diploid.
 
 ```sh
 #
 bcftools view \
-  --samples-file ^tmp/remove_samples.txt \
+  --samples-file ^remove_samples.txt \
   genotypes.vcf.gz \
   | bcftools +setGT - -- -t q -i "FMT/DP < 2" -n . \
   | bcftools +setGT - -- -t q -i "FMT/GQ < 1 & FMT/DP < 10 " -n . \
@@ -255,15 +256,11 @@ tabix -p vcf genotypes.het_to_missing.vcf.gz
 
 ```
 
-We also remove sites where more than 25% of individuals have "missing".
+We also remove sites where more than 25% of individuals have a "missing" genotype.
 
 ```sh
 
-NSAMPLES=$(bcftools query --list-samples genotypes.het_to_missing.vcf.gz | wc -l) && echo $NSAMPLES
-NMISSING10=$(echo -n $NSAMPLES | awk '{ $1=sprintf("%.0f",$1*0.1*2)} {print $1;}') && echo $NMISSING10
-NMISSING=$((echo $NSAMPLES-$NMISSING10/2 | bc -l) | awk '{ $1=sprintf("%.0f",$1)} {print $1;}') && echo $NMISSING
-
-bcftools view -Oz -i 'F_MISSING<0.1' genotypes.het_to_missing.vcf.gz \
+bcftools view -Oz -i 'F_MISSING<0.25' genotypes.het_to_missing.vcf.gz \
   > genotypes.het_filter_miss_filter.vcf.gz
 tabix -p vcf genotypes.het_filter_miss_filter.vcf.gz
 
