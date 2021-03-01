@@ -1,20 +1,19 @@
 # Genotyping
 
-Here we summarise the  process of genotyping the _Solenopsis sp_ samples. 
+Here we summarise the  process of genotyping the _Solenopsis sp_ samples.
 
 ## Data
 
-Sequenced reads were filtered with Skewer (v0.2.2).
-Minimum length of 80 for 100 bp reads and of 100 for 150 bp reads (--min $L)
+Sequenced reads were filtered with Skewer (v0.2.2), with minimum length of 80 for 100 bp reads and of 100 for 150 bp reads (--min $L)
 
 ```sh
 skewer -m pe  \
 $INPATH/$NAME.sra_1.fastq \
 $INPATH/$NAME.sra_2.fastq \
--x $FWD_ADAPTERS \
--y $REV_ADAPTERS \
---mean-quality $AVG_QUAL_THRESHOLD \
---end-quality $END_QUAL_THRESHOLD \
+-x foward_adapters.txt \
+-y reverse_adapters.txt \
+--mean-quality 20 \
+--end-quality 15 \
 --min $L \
 -n \
 -r 0.1 \
@@ -25,40 +24,12 @@ $INPATH/$NAME.sra_2.fastq \
 
 ```
 
-
 We used bwa-mem2 (v2.0pre2) to align reads to the reference genome Si_gnGA.
 
 ```sh
--B 6 -E 2 -L25,25 -U 50 -T 50 -h 4,200 -a -V -Y -M
+REF=gng20170922wFex.fa
+bwa-mem2 mem -t $CPUs -B 6 -E 2 -L25,25 -U 50 -R $READGROUPHEADER -v 1 -T 50 -h 4,200 -a -V -Y -M $REF $SAMPLE.R1.fq.gz $SAMPLE.R2.fq.gz
 ```
-
-The reference genome is available here:
-
-```sh
-
-REF=/data/home/btw586/db/genomic/S_invicta/2017-09-22-Si_gng20170922_eckart/gng20170922wFex.fa
-
-```
-{{Should this have full paths?}}
-The reads are available here:
-
-```sh
-ls /data2/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta
-```
-
-The alignments are available here:
-
-```sh
-
-ls -1 -d /data/archive/archive-SBCS-WurmLab/db/genomic/reads/S_invicta/2020-05-bams_388_eckart/bams_all_renamed/*.bam > tmp/bam.list
-
-BAMLST=tmp/bam.list
-
-```
-
-There are bams for 388 samples.
-
-Most of the samples (including all ingroup samples) consist of haploid male ants. There are three exceptions, which consist of pools of diploid workers. These exceptions form some of the outgroup samples.
 
 ## Overview of protocol
 
@@ -76,12 +47,7 @@ The reference genome was divided into regions, over which the steps were paralle
 
 # Get region
 #   And region size
-REGIONS=/data2/archive/archive-SBCS-WurmLab/db/genomic/S_invicta/2017-09-22-Si_gng20170922_eckart/gnG.REGIONS.splitby.FILTER2.500bp.regions
-
-# Some regions were basically empty
-grep -cv ":1-1$" $REGIONS
-# 14059
-
+REGIONS=regions.txt
 ```
 
 This was done with Freebayes, following the parameters below, parallelised over each line of the `$REGIONS` file.
@@ -92,6 +58,8 @@ REGION=$(sed -n "1p" $REGIONS) # The first line of the region file
 MINALTFRAC=0.40
 MINALTN=4
 MINCOV=4
+
+mkdir site
 
 freebayes --region REGION \
   --fasta-reference $REF \
@@ -115,11 +83,11 @@ tabix -fp vcf site/${REGION}.vcf.gz
 
 ```
 
-To filter the sites, removed any within the ranges of the following BED file, which represent highly repetitive regions.
+To filter the sites, we removed any within the ranges of the following BED file, which represent highly repetitive regions.
 
 ```sh
 
-REPEAT_REGIONS=/data/home/btw586/db/genomic/S_invicta/2017-09-22-Si_gng20170922_eckart/gng20170922.fa.FILTER2.bed.gz
+REPEAT_REGIONS=repetitive.bed
 
 ```
 
@@ -128,10 +96,10 @@ We also filter by quality and by number of reads in the forward and backward str
 
 ```sh
 
-# qsub filter_sites_qsub.sh
+mkdir site_filtered
 
 zcat site/${REGION}.vcf.gz \
-  | vcfintersect -v -l -b $FILTERBED \
+  | vcfintersect -v -l -b $REPEAT_REGIONS \
   | vcffilter -f 'QUAL > 30' \
   | bcftools view -e "NUMALT=1 & ((INFO/SRF)<=($MINALTN/2) | (INFO/SRR)<=($MINALTN/2))" - \
   | vcfallelicprimitives --keep-info --keep-geno -t DECOMPOSED \
@@ -144,7 +112,7 @@ zcat site/${REGION}.vcf.gz \
   | vcfstreamsort \
   | vcfuniq \
   | bgzip -f -@ 1 -c /dev/stdin \
-  > filtered_${REGION}.vcf.gz
+  > site_filtered/${REGION}.vcf.gz
 
 tabix -fp vcf site_filtered/${REGION}.vcf.gz
 
@@ -154,7 +122,7 @@ Then, we removed the genotype information from the VCFs.
 
 ```sh
 
-# qsub drop_genotypes_qsub.sh
+mkdir drop_genotype
 
 zcat site_filtered/${REGION}.vcf.gz \
   | vcfkeepinfo - AB AC AF AN DP MEANALT NUMALT RO SRF SRR TYPE NS ODDS \
@@ -167,38 +135,38 @@ We then fuse all the regions.
 
 ```sh
 
-VCF1=drop_genotype/$(head -n 1 tmp/regions).vcf
-
 # Get the header from one VCF
+VCF1=drop_genotype/$(head -n 1 $REGIONS).vcf
 grep "##" $VCF1 > tmp/fused_initial.vcf
 grep -m1 "#CHROM" $VCF1 | cut -f1-9 >> tmp/fused_initial.vcf
 # Concatenate all VCF files
-cat tmp/drop_genotype_chunks/*/*.vcf >> tmp/fused_initial.vcf
+cat drop_genotype/*.vcf >> fused_initial.vcf
 
-bcftools sort tmp/fused_initial.vcf | bgzip -c > tmp/variant_guide.vcf.gz
-tabix -fp vcf tmp/variant_guide.vcf.gz
+bcftools sort fused_initial.vcf | bgzip -c > variant_guide.vcf.gz
+tabix -fp vcf variant_guide.vcf.gz
 
-rm -f tmp/fused_initial.vcf
+rm -f fused_initial.vcf
 
 ```
 
 ## Genotyping each site
 
-For each site in the VCF above (`tmp/variant_guide.vcf.gz`), we genotype all the individuals. This is parallelised over the region file, as above.
+For each site in the VCF above (`variant_guide.vcf.gz`), we genotype all the individuals. This is parallelised over the region file, as above.
 
 ```sh
 
+mkdir genotype
 
-REGION=$(sed -n "1p" $REGIONS) # The first line of the region file
+REGION=$(sed -n "1p" $REGIONS) # The first (or nth) line of the region file
 
 MINALTFRAC=0.35
 MINALTN=2
 MINCOV=2
 
-REFVCF=tmp/variant_guide.vcf.gz
+REFVCF=variant_guide.vcf.gz
 
 freebayes \
-  --region {} \
+  --region $REGION \
   --fasta-reference $REF \
   --ploidy 2 \
   --haplotype-basis-alleles $REFVCF \
@@ -225,8 +193,10 @@ We then filter the resulting VCF file.
 
 ```sh
 
-zcat $OUTPUTFOLDER/vcf-genotyping/raw/{}.vcf.gz \
-  | vcfintersect -v -l -b $FILTERBED \
+mkdir genotype_filter
+
+zcat genotype/${REGION}.vcf.gz \
+  | vcfintersect -v -l -b $REPEAT_REGIONS \
   | vcffilter -f 'QUAL > 30' \
   | bcftools view -e "NUMALT=1 & ((INFO/SRF)<=($MINALTN/2) | (INFO/SRR)<=($MINALTN/2))" - \
   | vcfallelicprimitives --keep-info --keep-geno -t DECOMPOSED \
@@ -240,9 +210,9 @@ zcat $OUTPUTFOLDER/vcf-genotyping/raw/{}.vcf.gz \
   | vcfstreamsort \
   | vcfuniq \
   | bgzip -f -@ 1 -c /dev/stdin \
-  > genotype_filter/{}.vcf.gz
+  > genotype_filter/${REGION}.vcf.gz
 
-tabix -fp vcf genotype_filter/{}.vcf.gz
+tabix -fp vcf genotype_filter/${REGION}.vcf.gz
 
 ```
 
@@ -251,23 +221,24 @@ We then concatenate all the VCF chunks.
 
 ```sh
 
-VCF1=genotype_filter/$(head -n 1 tmp/regions).vcf
+VCF1=genotype_filter/$(head -n 1 $REGIONS).vcf
 
 # Get the header from one VCF
-grep "##" $VCF1 > tmp/fused_initial.vcf
-grep -m1 "#CHROM" $VCF1 | cut -f1-9 >> tmp/fused_initial.vcf
+grep "##" $VCF1 > fused_initial.vcf
+grep -m1 "#CHROM" $VCF1 | cut -f1-9 >> fused_initial.vcf
 # Concatenate all VCF files
-cat genotype_filter/*.vcf >> tmp/fused_genotypes.vcf
+cat genotype_filter/*.vcf >> fused_genotypes.vcf
 
-bcftools sort tmp/fused_genotypes.vcf \
+bcftools sort fused_genotypes.vcf \
   | bgzip -c > genotypes.vcf.gz
 tabix -fp vcf genotypes.vcf.gz
 
-rm -f tmp/fused_genotypes.vcf
+rm -f fused_genotypes.vcf
 
 ```
 
-We have a list of samples to remove. We remove these, then we filter each genotype by coverage, and turn each heterozygous genotype into "missing".
+We filter each genotype by coverage, and turn each heterozygous genotype into "missing".
+We removed 18 samples for which more than 25% of variant sites could not be genotyped, and the nine others had particularly high numbers of heterozygous sites indicating that they are likely diploid.
 
 ```sh
 #
