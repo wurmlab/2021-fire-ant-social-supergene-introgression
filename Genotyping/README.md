@@ -2,11 +2,12 @@
 
 Here we summarise the  process of genotyping the _Solenopsis sp_ samples.
 
-## Data
+## Sequence read filtering and mapping
 
-Sequenced reads were filtered with Skewer (v0.2.2), with minimum length of 80 for 100 bp reads and of 100 for 150 bp reads (--min $L)
+Sequenced reads were filtered with Skewer (v0.2.2), with minimum length of 80 for 100 bp reads and of 100 for 150 bp reads (--min $L). Clumpify was used to remove optical duplicates. This process is detailed in `read_filter.zsh`.
 
 ```sh
+
 skewer -m pe  \
   $INPATH/$NAME.sra_1.fastq \
   $INPATH/$NAME.sra_2.fastq \
@@ -19,7 +20,6 @@ skewer -m pe  \
   -r 0.1 \
   --compress \
   --format auto \
-  -t $CPUs \
   --output $OUTPUTFOLDER/$NAME
 
 ```
@@ -27,12 +27,56 @@ skewer -m pe  \
 We used bwa-mem2 (v2.0pre2) to align reads to the reference genome Si_gnGA.
 
 ```sh
+
 REF=gng20170922wFex.fa
-bwa-mem2 mem -t $CPUs -B 6 -E 2 -L25,25 -U 50 -R $READGROUPHEADER -v 1 -T 50 -h 4,200 -a -V -Y -M $REF $SAMPLE.R1.fq.gz $SAMPLE.R2.fq.gz
+
+bwa-mem2 mem -B 6 -E 2 -L25,25 -U 50 -R $READGROUPHEADER -v 1 -T 50 -h 4,200 -a -V -Y -M $REF $SAMPLE.R1.fq.gz $SAMPLE.R2.fq.gz
 
 ```
 
-## Overview of protocol
+The process of read mapping is presented in detail in `read_mapping.sh`.
+
+## Single-copy gene identification
+
+We identified the Hymenopteran single-copy genes in the _S. invicta_ genome using the tool BUSCO. We used the database of Hymenopteran single-copy genes.
+
+```sh
+
+LINEAGE="hymenoptera_odb10"
+LINEAGENAME=$(echo $LINEAGE | rev | cut -d"/" -f1 | rev)
+AUGUSTUSSPECIES="bombus_impatiens1"
+
+busco -i ref.fa --force \
+  --mode genome \
+  --lineage_dataset $LINEAGE \
+  --offline \
+  --augustus_species $AUGUSTUSSPECIES \
+  --evalue 1e-03 \
+  --limit 5 \
+  --out solenopsis_invicta.busco4
+
+```
+
+We transformed the output to create a BED file of single-copy genes, extended 1000bp upstream and downstream. This process is detailed in `single_copy_regions.sh`.
+
+## Identification of regions with very high coverage
+
+We filtered out variants in regions with very high coverage because these are likely to represent collapsed repeats. Coverage was measured with the tools `mosdepth`.
+
+```sh
+
+# Ran for each $SAMPLE
+mosdepth -t $CPUs \
+  --use-median \
+  --by solenopsis_invicta.busco4/busco4.genes.bed \
+  $SAMPLE.mosdepth.busco4 \
+  bams/$SAMPLE.bam
+
+```
+
+This process is detailed in `normal_coverage_regions.sh`.
+
+## Variant calling
 
 We use Freebayes (v1.2.0) to call variants among the samples. This is done in two steps:
 1. Identification of variant sites
@@ -40,14 +84,15 @@ We use Freebayes (v1.2.0) to call variants among the samples. This is done in tw
 
 Following this, the genotypes are filtered.
 
+We summarise the process of variant calling below. The full script used is detailed in `variant_calling.sh`.
+
 ### Identification of variant sites
 
-The reference genome was divided into regions, over which the steps were parallelised.
+The reference genome was divided into regions, each representing a single-copy gene, over which the steps were parallelised.
 
 ```sh
 
 # Get region
-#   And region size
 REGIONS=regions.txt
 
 ```
@@ -63,7 +108,7 @@ MINALTFRAC=0.40
 MINALTN=4
 MINCOV=4
 
-freebayes --region REGION \
+freebayes --region $REGION \
   --fasta-reference $REF \
   --ploidy 2 \
   --report-genotype-likelihood-max \
@@ -85,7 +130,7 @@ tabix -fp vcf site/${REGION}.vcf.gz
 
 ```
 
-To filter the sites, we removed any within the ranges of the following BED file, which represent highly repetitive regions.
+To filter the sites, we ran the script presented in `site_filter.zsh`. This script includes the removal of any variants within the ranges of a BED file representing highly repetitive regions of the genome.
 
 ```sh
 
@@ -133,7 +178,6 @@ zcat site_filtered/${REGION}.vcf.gz \
 ```
 
 We then fuse all the regions.
-
 
 ```sh
 
@@ -191,13 +235,14 @@ tabix -fp vcf genotype/${REGION}.vcf.gz
 
 ```
 
-We then filter the resulting VCF file.
+We then filter the resulting VCF file, which includes the removal of SNPs in regions with very high coverage and repetitive regions.
 
 ```sh
 
 mkdir genotype_filter
 
 zcat genotype/${REGION}.vcf.gz \
+  | vcfintersect -v -l -b $HIGH_COV_REGIONS \
   | vcfintersect -v -l -b $REPEAT_REGIONS \
   | vcffilter -f 'QUAL > 30' \
   | bcftools view -e "NUMALT=1 & ((INFO/SRF)<=($MINALTN/2) | (INFO/SRR)<=($MINALTN/2))" - \
@@ -220,7 +265,6 @@ tabix -fp vcf genotype_filter/${REGION}.vcf.gz
 
 We then concatenate all the VCF chunks.
 
-
 ```sh
 
 VCF1=genotype_filter/$(head -n 1 $REGIONS).vcf
@@ -239,29 +283,53 @@ rm -f fused_genotypes.vcf
 
 ```
 
-We filter each genotype by coverage, and turn each heterozygous genotype into "missing". We removed 18 samples for which more than 25% of variant sites could not be genotyped, and the nine others had particularly high numbers of heterozygous sites indicating that they are likely diploid.
+For genotype filtering, we divided the VCF into a VCF for each sample.
 
 ```sh
-#
-bcftools view \
-  --samples-file ^remove_samples.txt \
-  genotypes.vcf.gz \
-  | bcftools +setGT - -- -t q -i "FMT/DP < 2" -n . \
-  | bcftools +setGT - -- -t q -i "FMT/GQ < 1 & FMT/DP < 10 " -n . \
-  | bcftools +setGT - -- -t ./x -n . \
-  | bcftools +setGT - -- -t q -i 'GT="het"' -n . \
-  | bgzip -c > genotypes.het_to_missing.vcf.gz
 
-tabix -p vcf genotypes.het_to_missing.vcf.gz
+mkdir -p vcf-genotyping/samples
+
+vcfsamplenames genotypes.vcf.gz > vcf-genotyping/name_samples
+
+cat vcf-genotyping/name_samples \
+  | parallel -j 10 \
+  "vcfkeepsamples genotypes.vcf.gz {} | bgzip -c \
+    > vcf-genotyping/samples/{}.vcf.gz \
+    && tabix -fp vcf vcf-genotyping/samples/{}.vcf.gz"
 
 ```
 
-We also remove sites where more than 25% of individuals have a "missing" genotype.
+We filter each genotype with the following script:
 
 ```sh
 
-bcftools view -Oz -i 'F_MISSING<0.25' genotypes.het_to_missing.vcf.gz \
-  > genotypes.het_filter_miss_filter.vcf.gz
-tabix -p vcf genotypes.het_filter_miss_filter.vcf.gz
+mkdir -p vcf-genotyping/samples-filtered
+
+MINCOV=2
+
+cat vcf-genotyping/name_samples \
+parallel genotype_filter.zsh \
+  vcf-genotyping/samples/{}.vcf.gz \
+  $MINCOV \
+  {}
+  vcf-genotyping/samples-filtered
+
+```
+
+This script sets genotypes with low coverage (DP<`$MINCOV`) and low genotype quality (GQ<1) to missing. It also identifies sites with a heterozygous genotypes where the proportion of reads supporting the reference allele is within 0.25 and 0.75 (i.e., where the call is ambiguous). For the pooled outgroup samples, these genotypes are set to a random allele, and for the haploid samples, these genetypes are set to missing. Heterozygous sites where the reference allele proportion is outside this range are set to homozygous for the allele with the highest proportion of supported reads. Note that this script requires a file named `shuffle_file`, with random 0 or 1 with many lines as there are variants in the VCF file (we made it with the tool `shuffle`).
+
+We merged the filtered genotype VCFs into a single file `genotype_filter.vcf.gz`. We then removed sites where more than 25% of individuals have a "missing" genotype.
+
+```sh
+
+# Identify site count for which more than 25% samples have a missing genotype
+NSAMPLES=$(vcfsamplenames genotype_filter.vcf.gz | wc -l)
+NMISSING25=$(echo -n $NSAMPLES | awk '{ $1=sprintf("%.0f",$1*0.25*2)} {print $1;}')
+NMISSING=$((echo $NSAMPLES-$NMISSING25/2 | bc -l) | awk '{ $1=sprintf("%.0f",$1)} {print $1;}')
+
+zcat genotype_filter.vcf.gz \
+  | vcftools --recode --recode-INFO-all -c --vcf - --max-missing-count $NMISSING25 \
+  | bgzip -f -c /dev/stdin > genotypes.max_missing25.vcf.gz
+tabix -fp vcf genotypes.max_missing25.vcf.gz
 
 ```
