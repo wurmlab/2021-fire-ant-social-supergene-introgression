@@ -6,7 +6,7 @@ Our aim was to construct a tree representing the supergene region and a tree rep
 
 We built the tree with sequences from single-copy genes (including exons, introns and 1000 bp upstream and downstream of each gene). For each single-copy gene we created a fasta file with the aligned consensus nucleotide sequences for all the individuals, and a partition file with the boundary coordinates for coding and non-coding sequences.
 
-All the processes in this script are detailed in `phylogeny.txt`.
+All the processes summarised in this document are detailed in the script `phylogeny.sh`.
 
 ## Selecting the best-fit model of evolution for each gene
 
