@@ -332,7 +332,7 @@ $F/{}/{}.fasta.allsamples.fa \
 $F/modeltest/{}.modeltest.NONCODING-CODING.part.aic \
 $OUTDIR/{}"
 
-# chr16nr
+# chr16nr 
 cat /scratch/ek/solenopsis/2018/ref/gng20170922.fa.busco4.chr16nr.ComplFragm.lst \
 | parallel --no-notice -j 30 \
 "echo {} && $HOME/scripts/raxml.zsh\
