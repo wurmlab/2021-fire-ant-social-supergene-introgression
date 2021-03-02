@@ -12,7 +12,15 @@ We genotyped a group of _Solenopsis_ samples, including _Solenopsis invicta_, _S
 
 All steps relating to read filtering, mapping and genotype calling are presented in the directory `Genotyping`. This directory also includes the identification of single-copy genes with BUSCO.
 
-## Coalescent-based phylogenetic inference
+## Phylogenetic inferences
+
+We inferred the phylogenetic tree of the species and of the supergene using two different approaches:
+1. A coalescent-based approached detailed in the directory `Coalescence-based phylogenies`
+2. A concatenated alignment approach detailed in the directory `Phylogenies inferred with concatenated SNPs`
+
+A PCA of the supergene genotypes is presented in `PCA supergene SNPs` directory.
+
 
 ## Nucleotide diversity
-See directory `2021-01-04-pi`.
+
+See directory `Nucleotide diversity (pi)`.
