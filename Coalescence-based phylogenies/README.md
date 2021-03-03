@@ -29,7 +29,7 @@ We used `modeltest-ng` to determine the best-fit model for each partition in eac
 
 ## Phylogeny for each tree
 
-We used RAXML to build a phylogeny for each single-copy gene. This was done with the script `raxml.zsh`, using the best-fit model determined in the previous step.
+We used RAxML to build a phylogeny for each single-copy gene. This was done with the script `raxml.zsh`, using the best-fit model determined in the previous step.
 
 ``` sh
 
@@ -81,7 +81,8 @@ java -Xmx250g \
 ```
 
 ## Consensus tree reconstruction with bootstrap
-We implemented ASTRAL bootstrapping (n=100) using 1 bootstrapped-tree per gene. These trees were priviously generated in the per-gene raxML tree inference step. This means that ASTRAL ran one hundred times with each different set of bootstrapped gene trees. Branch support was calculated from this process.
+
+We implemented ASTRAL bootstrapping (n=100) using 1 bootstrapped tree per gene. These trees were previously generated in the per-gene RAxML tree inference step. This means that ASTRAL ran one hundred times with each different set of bootstrapped gene trees. Branch support was calculated from this process.
 
 ```sh
 
@@ -100,7 +101,7 @@ java -Xmx150g \
 --bootstraps $INPUTBOOTSTRAPS \
 --seed 12345 \
 --reps 100
-#take out the two last trees (greedy consensus and the main tree from Astral for viz)
+#take out the two last trees (greedy consensus and the main tree from Astral for visualisation)
 cat $OUTPUTFILE.nwk | tail -n2 > $OUTPUTFILE.greedyconsensus.main.nwk
 
 # Chr1-15 tree
@@ -120,4 +121,5 @@ java -Xmx150g \
 --reps 100
 
 cat $OUTPUTFILE.nwk | tail -n2 > $OUTPUTFILE.greedyconsensus.main.nwk
+
 ```
