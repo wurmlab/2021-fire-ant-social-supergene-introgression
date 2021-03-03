@@ -81,7 +81,7 @@ java -Xmx250g \
 ```
 
 ## Consensus tree reconstruction with bootstrap
-We implemented ASTRAL bootstrapping (n=100) using 1 bootstrapped-tree per gene. These trees were priviously generated in the per-gene raxML tree inference step. This means that ASTRAL ran one hundred times with each different set of bootstrapped gene trees. Branch support was calculated from this process. 
+We implemented ASTRAL bootstrapping (n=100) using 1 bootstrapped-tree per gene. These trees were priviously generated in the per-gene raxML tree inference step. This means that ASTRAL ran one hundred times with each different set of bootstrapped gene trees. Branch support was calculated from this process.
 
 ```sh
 
@@ -101,9 +101,7 @@ java -Xmx150g \
 --seed 12345 \
 --reps 100
 #take out the two last trees (greedy consensus and the main tree from Astral for viz)
-cat $OUTPUTFILE.nwk \
-| tail -n2 \
-> $OUTPUTFILE.greedyconsensus.main.nwk
+cat $OUTPUTFILE.nwk | tail -n2 > $OUTPUTFILE.greedyconsensus.main.nwk
 
 # Chr1-15 tree
 INPUTTREES="astral.chr1-15/input.10SNPs.AR142-AR66-pruned.tre"
