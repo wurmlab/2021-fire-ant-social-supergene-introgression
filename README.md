@@ -24,3 +24,7 @@ A PCA of the supergene genotypes is presented in `PCA supergene SNPs` directory.
 ## Nucleotide diversity
 
 See directory `Nucleotide diversity (pi)`.
+
+## Bray-Curtis distances between haplotypes
+
+See directory `Bray-Curtis distances`.
