@@ -59,7 +59,6 @@ subset_to_samples <- function(gt, samples) {
   return(gt)
 }
 
-# Plot
 matrix_to_long <- function(ma, group) {
   df <- as.data.frame(ma)
   df$species_a <- rownames(df)
@@ -88,7 +87,7 @@ gt_ma[gt_ma == "1|1"] <- "1"
 gt_ma <- apply(gt_ma, 2, as.numeric)
 
 # ---------------------------------------------------------------------------- #
-# Bray-curtis distance
+# Bray-curtis dissimilarity
 
 library(vegan)
 gt_bray   <- vegdist(t(gt_ma), method="bray", na.rm = TRUE)
@@ -97,7 +96,25 @@ gt_bray_m <- as.matrix(gt_bray)
 # ---------------------------------------------------------------------------- #
 # Long version (Supplementary Data)
 
-matrix_to_long(gt_bray_m, "") %>% select(-Group) %>%
+matrix_supp_table <- function(ma) {
+  # Only count upper triangle
+  ma[lower.tri(ma, diag = TRUE)] <- NA
+
+  df         <- as.data.frame(ma)
+  df$Sample_a <- rownames(df)
+  df <- pivot_longer(df,
+                     cols = -Sample_a,
+                     names_to = "Sample_b",
+                     values_to = "Bray_Curtis_dissimilarity")
+
+  df <- df[!is.na(df$Dissimilarity), ]
+  stopifnot(df$Sample_a != df$Sample_b)
+  stopifnot(nrow(df) == ((nrow(ma)^2 - nrow(ma)) / 2))
+
+  return(df)
+}
+
+matrix_supp_table(gt_bray_m) %>%
   write.csv("results/supp_table.csv", row.names = FALSE, quote = FALSE)
 
 # ---------------------------------------------------------------------------- #

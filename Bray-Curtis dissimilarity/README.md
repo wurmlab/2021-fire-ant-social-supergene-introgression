@@ -18,4 +18,4 @@ bcftools query -l results/gt.vcf.gz > tmp/all_samples
 
 ```
 
-We measured the Bray-Curtis distances between samples in `bray_curtis_distances.r`.
+We measured the Bray-Curtis dissimilarity between samples in `bray_curtis_dissimilarity.r`.
