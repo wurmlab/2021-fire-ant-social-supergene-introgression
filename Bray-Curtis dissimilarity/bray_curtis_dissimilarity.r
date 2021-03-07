@@ -100,6 +100,8 @@ matrix_supp_table <- function(ma) {
   # Only count upper triangle
   ma[lower.tri(ma, diag = TRUE)] <- NA
 
+  stopifnot(ncol(ma) == nrow(ma))
+
   df         <- as.data.frame(ma)
   df$Sample_a <- rownames(df)
   df <- pivot_longer(df,
@@ -107,7 +109,7 @@ matrix_supp_table <- function(ma) {
                      names_to = "Sample_b",
                      values_to = "Bray_Curtis_dissimilarity")
 
-  df <- df[!is.na(df$Dissimilarity), ]
+  df <- df[!is.na(df$Bray_Curtis_dissimilarity), ]
   stopifnot(df$Sample_a != df$Sample_b)
   stopifnot(nrow(df) == ((nrow(ma)^2 - nrow(ma)) / 2))
 
