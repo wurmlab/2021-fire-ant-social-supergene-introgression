@@ -2,7 +2,7 @@
 
 We use topology weighting ([Martin and Van Belleghem 2017]( https://doi.org/10.1534/genetics.116.194720)) on windows of BUSCO genes to test wether the evidence for introgression between *S. invicta* and *S. richteri* is shared across the supergene.
 
-We have already created non-overlapping windows of four concatenates genes for the supergene and made a tree with RAxML for each window. This is the directory `supergene`.
+We have already created non-overlapping windows of four concatenates genes for the supergene and made a tree with R AxML for each window. This is the directory `supergene`.
 
 Below, we do the same for genes mapped to chromosome 1 and the remaining parts of chromosome 16. We add the trees made for the supergene region (`supergene`), and use Twisst to analyse them.  
 
