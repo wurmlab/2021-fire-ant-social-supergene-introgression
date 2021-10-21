@@ -1,0 +1,230 @@
+---
+title: "Comparing ILS and introgression scenarios using SNPs"
+author: "Rodrigo Pracana, QMUL"
+date: "04/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+
+
+make_sci <- function(x) {
+    sprintf("%.1fx10^{%d}",
+          x/10^floor(log10(abs(x))),
+          floor(log10(abs(x))))
+}
+
+pretty_number_inner <- function(x) {
+  if (is.na(x)) {
+    x <- NA
+  } else if (x == 0) {
+    x <- as.character(x)
+  } else if (x < 1e-4) {
+    x <- as.character(make_sci(x))
+  } else if  (x < 1e-2) {
+     x <- as.character(round(x, 4))
+  } else if (x < 1e4) {
+     x <- as.character(round(x, 2))
+  } else {
+     x <- as.character(make_sci(x))
+  }
+  return(x)
+}
+
+pretty_numbers <- function(x) {
+  sapply(x, pretty_number_inner)
+}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+
+library(tidyverse)
+library(patchwork)
+library(broom)
+
+dir.create(recursive = T, "results/fig")
+
+```
+
+```{r}
+
+read_dfoil <- function(path, species) {
+  dfoil <- read.table(path, comment.char = '&', header = T)
+  dfoil$species <- species
+    
+  dfoil %>%
+    rename(gene = X.chrom) %>%
+    mutate(gene = gsub(".*\\/", "", gene)) %>%
+    mutate(gene = gsub("\\.fa", "", gene)) %>%
+    return()
+}
+
+dfoil_to_long <- function(dfoil) {
+  dfoil %>%
+    select(gene, coord, species, ends_with("_stat"), ends_with("_Pvalue")) %>%
+    pivot_longer(ends_with(c("_stat","_Pvalue")), names_to = "D_type", values_to = "D_value") %>%
+    separate(D_type, c("D_type", "stat")) %>%
+    pivot_wider(names_from = stat, values_from = D_value) %>%
+    rename(D_value = stat, P_value = Pvalue) %>%
+    mutate(D_type = fct_relevel(D_type, "DFO", "DIL", "DFI", "DOL")) %>%
+    return()
+}
+
+meg  <- read_dfoil("results/dfoil_output/megergates.dfoil", "megergates")
+int  <- read_dfoil("results/dfoil_output/interrupta.dfoil", "interrupta")
+adrx <- read_dfoil("results/dfoil_output/xadr.dfoil", "AdRX")
+rich <- read_dfoil("results/dfoil_output/richteri.dfoil", "richteri")
+
+all_dfoil <- rbind(meg, int, adrx, rich)
+
+all_long <- dfoil_to_long(all_dfoil)
+
+```
+
+```{r, eval=FALSE}
+
+dfoil_numbers_to_long <- function(dfoil) {
+  dfoil %>%
+    select(gene, coord, species, ends_with("_left"), ends_with("_right")) %>%
+    pivot_longer(c(ends_with("_left"), ends_with("_right"))) %>%
+    separate(name, c("D_type", "hand")) %>%
+    pivot_wider(names_from = "hand", values_from = "value") %>%
+    mutate(D_type = fct_relevel(D_type, "DFO", "DIL", "DFI", "DOL")) %>%
+    return()
+}
+
+all_dfoil_snps <- dfoil_numbers_to_long(all_dfoil)
+
+ggplot(all_dfoil_snps) +
+  geom_point(aes(x = right, y = left), alpha = 0.5) +
+    facet_grid(rows = vars(species), cols = vars(D_type)) +
+    geom_abline(intercept = 0, slope = 1) +
+    theme_bw() +
+    xlim(0, 100) + ylim(0,100)
+
+
+```
+
+## Introduction
+
+We have used the DFOIL software to count allele patterns, assuming the following species tree topology:
+
+((richteri_B, richteri_b),(invicta_b, invicta_B)),saevissima).
+
+We ask which of the two introgression scenarios is most likely:
+
+((richteri_b, invicta_b),invicta_B),richteri_B)),saevissima)
+
+((richteri_b, invicta_b),richteri_B),invicta_B)),saevissima)
+
+
+```{r}
+
+read_allele_counts <- function(path, species) {
+  dfoil <- read.table(path, comment.char = '&', header = T)
+  dfoil$species <- species
+    
+  dfoil %>%
+    rename(gene = X.chrom) %>%
+    mutate(gene = gsub(".*\\/", "", gene)) %>%
+    mutate(gene = gsub("\\.fa", "", gene)) %>%
+    relocate(species, .after=position) %>%
+    return()
+}
+
+richteri_counts   <- read_allele_counts("results/allele_counts/richteri.counts", "richteri")
+megergates_counts <- read_allele_counts("results/allele_counts/megergates.counts", "megergates")
+interrupta_counts <- read_allele_counts("results/allele_counts/interrupta.counts", "interrupta")
+adrx_counts       <- read_allele_counts("results/allele_counts/adrx.counts", "AdRX")
+
+all_counts <- rbind(richteri_counts, megergates_counts, interrupta_counts, adrx_counts)
+
+```
+
+The mean count for gene allele combination (averages across genes) is shown on this table.
+
+```{r}
+
+all_counts %>%
+  pivot_longer(!c(gene, position, species)) %>%
+  group_by(name, species) %>%
+  summarise(mean_count = round(mean(value),1)) %>%
+  pivot_wider(names_from = species, values_from = mean_count)
+
+```
+
+## Evidence that Sb introgressed from _S. invicta_ to the remaining species 
+
+We tested whether the SB branch is longer in _S. invicta_ relative to each focal species. A difference in branch length would support the introgression hypothesis, and inform us on the direction of introgression:
+
+((richteri_b, invicta_b),invicta_B),richteri_B)),saevissima)
+
+((richteri_b, invicta_b),richteri_B),invicta_B)),saevissima)
+
+We tested the hypothesis that the species in which Sb evolved will have fewer alleles private to SB, given that it will share part of its branch with Sb. We found that the SB of _S. invicta_ had fewer private alleles than the SB of each focal species. This difference was small but significant in all species (two-tail paired t-test, Bonferonni-corrected p < 0.05) except for _S. interrupta_, where there was no significant difference.
+
+```{r, fig.height = 6, fig.width = 6}
+
+all_counts %>%
+  mutate(species = paste0("S. ", species)) %>%
+  ggplot() +
+  geom_point(aes(x = AAABA, y =  BAAAA), alpha = 0.5) +
+  facet_wrap(vars(species), ncol = 2) +
+  theme_bw() +
+  geom_abline(slope=1, intercept=0) +
+  coord_fixed(xlim = c(0, 50), ylim = c(0,50)) +
+  xlab("Private to S. invicta SB") +
+  ylab("Private to focal SB") -> p1
+p1
+
+all_counts %>%
+  group_by(species) %>%
+  summarise(p = t.test(AAABA, BAAAA, paired = TRUE)$p.value,
+            t = t.test(AAABA, BAAAA, paired = TRUE)$statistic,
+            estimate = t.test(AAABA, AABAA, paired = TRUE)$estimate,
+            mean_invicta = mean(AAABA),
+            mean_focal = mean(BAAAA)) %>%
+  ungroup %>%
+  mutate(corrected_p = p * 4) %>%
+  mutate(significant = ifelse(corrected_p < 0.05,"*","")) %>%
+  as.data.frame()
+
+```
+
+We then tested the hypothesis that the species in which Sb evolved will have more private alleles in common with Sb than the other species. Most genes had a small number of such alleles. Nevertheless, on average _S. invicta_ had more private alleles in common with Sb than each of the focal species (two-tail paired t-test, Bonferonni-corrected p < 0.05).
+
+```{r, fig.height = 6, fig.width = 6}
+
+all_counts %>%
+  mutate(species = paste0("S. ", species)) %>%
+  ggplot() +
+  geom_point(aes(x = ABBBA + AABBA + ABABA, y =  BBBAA + BABAA + BBABA), alpha = 0.5) +
+  facet_wrap(vars(species), ncol = 2) +
+  theme_bw() +
+  geom_abline(slope=1, intercept=0) +
+  coord_fixed(xlim = c(0, 25), ylim = c(0, 25)) +
+  xlab("Shared between Sb and the S. invicta SB") +
+  ylab("Shared between Sb and the focal SB") -> p2
+
+p2
+
+all_counts %>%
+  group_by(species) %>%
+  summarise(p = t.test(ABBBA + AABBA + ABABA, BBBAA + BABAA + BBABA, paired = TRUE)$p.value,
+            t = t.test(ABBBA + AABBA + ABABA, BBBAA + BABAA + BBABA, paired = TRUE)$statistic,
+            estimate = t.test(ABBBA + AABBA + ABABA, BBBAA + BABAA + BBABA, paired = TRUE)$estimate,
+            mean_invicta = mean(ABBBA + AABBA + ABABA),
+            mean_focal = mean(BBBAA + BABAA + BBABA)) %>%
+  ungroup %>%
+  mutate(corrected_p = p * 4) %>%
+  mutate(significant = ifelse(corrected_p < 0.05,"*","")) %>%
+  as.data.frame()
+
+ggsave(p1 + p2 + plot_annotation(tag_levels = 'a'), file = "results/fig/shared_private.pdf", width = 9, height = 4.5)
+
+```
+
+## Conclusion
+
+The fact that SB had fewer private alleles in _S. invicta_ than in any of the other species is consistent with an introgression from _S. invicta_ to each of the other species, as is the fact that SB of _S. invicta_ shared more alleles with the Sb branch than the SB of any other species.
+
