@@ -1,0 +1,12 @@
+[Input]
+treefile: ./chr16nr.17samples.raxml.rooted.bestTree
+numdistributions: 2
+likelihoodthresh: 0.01
+numsteps: 50
+gradascentscalar: 0.5
+totaloutgroup: gem-1-bigB-m-majorityallele
+multiproc: True
+maxcores: 16
+
+[Output]
+OutputPath: ./chr16nr.17samples.quibl.out.csv
