@@ -1,0 +1,10 @@
+gem-1-bigB-m-majorityallele,CGI1-1-bigB-m -3.91
+Lad4-1-bigB-m-majorityallele,CGI1-1-bigB-m -2.67
+Par2-5-bigB-m,CGI1-1-bigB-m -1.76
+Par2-5-bigB-m,SRR9008150_sae-46-Reg-bigB -1.26
+SRR9008217_int-122-Car-bigB,CGI1-1-bigB-m -1.2
+SRR9008215_meg-128-BZ-bigB,CGI1-1-bigB-m -1.09
+SRR9008215_meg-128-BZ-bigB,SRR9008232_xAdR-134-Bra-bigB -0.97
+SRR9008200_ric-88-Ros-bigB,CGI1-1-bigB-m -1.01
+SRR9008142_mac-145-Col-bigB,CGI1-1-bigB-m -0.67
+SRR9008253_inv-218-Cor-bigB,CGI1-1-bigB-m -0.51

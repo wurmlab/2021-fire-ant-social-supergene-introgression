@@ -1,0 +1,68 @@
+
+#############################################################
+#############################################################
+#############################################################
+### format partitions Chr16nr
+FOLDERCONCAT="run1/dating.msa.chr16nr.sorted.pxclsq.concat"
+INPUTLIST="common.buscos.chr16nr.lst"
+#############################################################
+## get models for each BUSCO (here we use the model for the coding region)
+rm -f run1/busco.dating.chr16nr.models.busco.for.partitions.txt
+N=$(cat $INPUTLIST | wc -l) && echo $N
+for (( i = 1 ; i < $N+1 ; i++))
+ do
+BUSCOGENE=$(cat $INPUTLIST | sed -n $i'p')
+echo $i". "$BUSCOGENE
+MODEL=$(cat genes.models.overview.tsv | grep -w $BUSCOGENE | cut -f2)
+echo $MODEL":"$BUSCOGENE"," >> run1/busco.dating.chr16nr.models.busco.for.partitions.txt
+done
+#############################################################
+cat $FOLDERCONCAT/busco.dating.chr16nr.partitions | sed "s/run1\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run1\/dating.msa.chr1-15.sorted.pxclsq\///g" | sed "s/run2\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run2\/dating.msa.chr1-15.sorted.pxclsq\///g" | sed "s/run3\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run3\/dating.msa.chr1-15.sorted.pxclsq\///g" | sed "s/run4\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run4\/dating.msa.chr1-15.sorted.pxclsq\///g"| sed "s/\.fa//g" > $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted1.raxml
+cat run1/busco.dating.chr16nr.models.busco.for.partitions.txt | tr -d ' ' > $FOLDERCONCAT/busco.dating.chr16nr.models.busco.for.partitions.txt
+#
+echo "#nexus" > $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted2.nex
+echo "begin sets;" >> $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted2.nex
+cat $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted1.raxml | sed "s/DNA, /    charset /g" | sed -r "s/$/;/g" >> $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted2.nex
+echo -n "    charpartition mine = " >> $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted2.nex
+cat $FOLDERCONCAT/busco.dating.chr16nr.models.busco.for.partitions.txt | tr '\n' ' ' | sed "s/, $/;\nend;/g" >> $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted2.nex
+echo "done models chr16nr" >> run1/done.txt
+cat $FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted2.nex
+#############################################################
+#############################################################
+#############################################################
+
+
+
+
+#############################################################
+#############################################################
+#############################################################
+### format partitions Chr1-15
+FOLDERCONCAT="run1/dating.msa.chr1-15.sorted.pxclsq.concat"
+#INPUTLIST="common.buscos.chr1-15.lst"
+INPUTLIST="common.buscos.chr1-15.removed.3303.850.lst"
+#############################################################
+## get models for each BUSCO (here we use the model for the coding region)
+rm -f run1/busco.dating.chr1-15.models.busco.for.partitions.txt
+N=$(cat $INPUTLIST | wc -l) && echo $N
+for (( i = 1 ; i < $N+1 ; i++))
+ do
+BUSCOGENE=$(cat $INPUTLIST | sed -n $i'p')
+echo $i". "$BUSCOGENE
+MODEL=$(cat genes.models.overview.tsv | grep -w $BUSCOGENE | cut -f2)
+echo $MODEL":"$BUSCOGENE"," >> run1/busco.dating.chr1-15.models.busco.for.partitions.txt
+done
+#############################################################
+cat $FOLDERCONCAT/busco.dating.chr1-15.partitions | sed "s/run1\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run1\/dating.msa.chr1-15.sorted.pxclsq\///g" | sed "s/run2\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run2\/dating.msa.chr1-15.sorted.pxclsq\///g" | sed "s/run3\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run3\/dating.msa.chr1-15.sorted.pxclsq\///g" | sed "s/run4\/dating.msa.chr16nr.sorted.pxclsq\///g" | sed "s/run4\/dating.msa.chr1-15.sorted.pxclsq\///g"| sed "s/\.fa//g" > $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted1.raxml
+cat run1/busco.dating.chr1-15.models.busco.for.partitions.txt | tr -d ' ' > $FOLDERCONCAT/busco.dating.chr1-15.models.busco.for.partitions.txt
+#
+echo "#nexus" > $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted2.nex
+echo "begin sets;" >> $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted2.nex
+cat $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted1.raxml | sed "s/DNA, /    charset /g" | sed -r "s/$/;/g" >> $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted2.nex
+echo -n "    charpartition mine = " >> $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted2.nex
+cat $FOLDERCONCAT/busco.dating.chr1-15.models.busco.for.partitions.txt | tr '\n' ' ' | sed "s/, $/;\nend;/g" >> $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted2.nex
+echo "done models chr1-15" >> run1/done.txt
+cat $FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted2.nex
+#############################################################
+#############################################################
+#############################################################

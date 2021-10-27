@@ -1,0 +1,46 @@
+
+######## Phylogeny
+
+## node ages
+nano node.ages.1.txt
+geminata_gem-1,invicta_gnGA -3.91
+fugax,geminata_gem-1 -25.2
+
+
+
+## chr16nr
+FOLDERCONCAT="run1/dating.msa.chr16nr.sorted.pxclsq.concat"
+ALIGNMENT="$FOLDERCONCAT/busco.dating.chr16nr.supermatrix.fa"
+PARTITIONFILE="$FOLDERCONCAT/busco.dating.chr16nr.partitions.formatted2.nex"
+DATES="node.ages.1.txt"
+#
+FOLDERPHYLO="run1/IQTREE2.chr16nr.1"
+mkdir $FOLDERPHYLO
+iqtree2 -T 40 -p $PARTITIONFILE -s $ALIGNMENT --date $DATES --ufboot 1000 --date-tip 0 --date-ci 100 --prefix $FOLDERPHYLO/iqtree.ch16nr.1
+
+#Alignment has 22 sequences with 123639 columns, 823 distinct patterns
+#1645 parsimony-informative, 7869 singleton sites, 114125 constant sites
+
+
+
+
+
+## chr1-15
+FOLDERCONCAT="run1/dating.msa.chr1-15.sorted.pxclsq.concat"
+ALIGNMENT="$FOLDERCONCAT/busco.dating.chr1-15.supermatrix.fa"
+PARTITIONFILE="$FOLDERCONCAT/busco.dating.chr1-15.partitions.formatted2.nex"
+DATES="node.ages.1.txt"
+#
+FOLDERPHYLO="run1/IQTREE2.chr1-15.1"
+mkdir $FOLDERPHYLO
+iqtree2 -T 80 -p $PARTITIONFILE -s $ALIGNMENT --date $DATES --ufboot 1000 --date-tip 0 --date-ci 100 --prefix $FOLDERPHYLO/iqtree.ch16nr.1
+
+#Alignment has 22 sequences with 2906225 columns, 6314 distinct patterns
+#28839 parsimony-informative, 170774 singleton sites, 2706612 constant sites
+
+
+
+
+
+
+

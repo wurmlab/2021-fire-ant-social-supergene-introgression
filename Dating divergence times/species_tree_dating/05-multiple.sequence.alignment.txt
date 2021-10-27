@@ -1,0 +1,157 @@
+
+## fuse fastas for alignment and relabel
+rm -rf busco.fasta.fused.chr1-15
+mkdir busco.fasta.fused.chr1-15
+
+cat common.buscos.chr1-15.lst | parallel -j30 "echo {}; cat Sfugax.fa.busco405/Sfugax.fa.busco405.complete.fasta/{}.fa \
+gng20170922.fa.busco405/gng20170922.fa.busco405.complete.fasta/{}.fa \
+Sgeminata.fa.busco405/Sgeminata.fa.busco405.complete.fasta/{}.fa \
+Spusillignis.fa.busco405/Spusillignis.fa.busco405.complete.fasta/{}.fa \
+Ssaevissima2.fa.busco405/Ssaevissima2.fa.busco405.complete.fasta/{}.fa \
+GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405/GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405/GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_010367695.1_ASM1036769v1_genomic.fna.busco405/GCA_010367695.1_ASM1036769v1_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_009299975.1_ASM929997v1_genomic.fna.busco405/GCA_009299975.1_ASM929997v1_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_009299965.1_ASM929996v1_genomic.fna.busco405/GCA_009299965.1_ASM929996v1_genomic.fna.busco405.complete.fasta/{}.fa \
+SRR9008133.masurca.3.3.7.fa.busco405/SRR9008133.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008142.masurca.3.3.7.fa.busco405/SRR9008142.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008150.masurca.3.3.7.fa.busco405/SRR9008150.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008158.masurca.3.3.7.fa.busco405/SRR9008158.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008168.masurca.3.3.7.fa.busco405/SRR9008168.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008173.masurca.3.3.7.fa.busco405/SRR9008173.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008200.masurca.3.3.7.fa.busco405/SRR9008200.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008215.masurca.3.3.7.fa.busco405/SRR9008215.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008217.masurca.3.3.7.fa.busco405/SRR9008217.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008228.masurca.3.3.7.fa.busco405/SRR9008228.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008232.masurca.3.3.7.fa.busco405/SRR9008232.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008253.masurca.3.3.7.fa.busco405/SRR9008253.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa |\
+seqtk seq -l 0 > busco.fasta.fused.chr1-15/{}.fa"
+cat busco.fasta.fused.chr1-15/9932at7399.fa | grep ">" 
+cat busco.fasta.fused.chr1-15/9932at7399.fa | grep ">" | wc -l
+#22
+
+rm -rf busco.fasta.fused.chr16nr
+mkdir busco.fasta.fused.chr16nr
+cat common.buscos.chr16nr.lst | parallel -j30 "echo {}; cat Sfugax.fa.busco405/Sfugax.fa.busco405.complete.fasta/{}.fa \
+gng20170922.fa.busco405/gng20170922.fa.busco405.complete.fasta/{}.fa \
+Sgeminata.fa.busco405/Sgeminata.fa.busco405.complete.fasta/{}.fa \
+Spusillignis.fa.busco405/Spusillignis.fa.busco405.complete.fasta/{}.fa \
+Ssaevissima2.fa.busco405/Ssaevissima2.fa.busco405.complete.fasta/{}.fa \
+GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405/GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405/GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_010367695.1_ASM1036769v1_genomic.fna.busco405/GCA_010367695.1_ASM1036769v1_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_009299975.1_ASM929997v1_genomic.fna.busco405/GCA_009299975.1_ASM929997v1_genomic.fna.busco405.complete.fasta/{}.fa \
+GCA_009299965.1_ASM929996v1_genomic.fna.busco405/GCA_009299965.1_ASM929996v1_genomic.fna.busco405.complete.fasta/{}.fa \
+SRR9008133.masurca.3.3.7.fa.busco405/SRR9008133.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008142.masurca.3.3.7.fa.busco405/SRR9008142.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008150.masurca.3.3.7.fa.busco405/SRR9008150.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008158.masurca.3.3.7.fa.busco405/SRR9008158.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008168.masurca.3.3.7.fa.busco405/SRR9008168.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008173.masurca.3.3.7.fa.busco405/SRR9008173.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008200.masurca.3.3.7.fa.busco405/SRR9008200.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008215.masurca.3.3.7.fa.busco405/SRR9008215.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008217.masurca.3.3.7.fa.busco405/SRR9008217.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008228.masurca.3.3.7.fa.busco405/SRR9008228.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008232.masurca.3.3.7.fa.busco405/SRR9008232.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa \
+SRR9008253.masurca.3.3.7.fa.busco405/SRR9008253.masurca.3.3.7.fa.busco405.complete.fasta/{}.fa |\
+seqtk seq -l 0 > busco.fasta.fused.chr16nr/{}.fa"
+cat busco.fasta.fused.chr16nr/531at7399.fa | grep ">" 
+cat busco.fasta.fused.chr16nr/531at7399.fa | grep ">" | wc -l
+#22
+
+
+
+## run parallel alignments and sort by ID (phyx pxsort)
+mkdir run1/dating.msa.chr16nr
+mkdir run1/dating.msa.chr16nr.sorted
+cat common.buscos.chr16nr.lst | parallel -j 91 "echo {}; prank -d=busco.fasta.fused.chr16nr/{}.fa -f=fasta -DNA -iterate=10 -o=run1/dating.msa.chr16nr/{} && cat run1/dating.msa.chr16nr/{}.best.fas | pxssort --sortby 1 > run1/dating.msa.chr16nr.sorted/{}.fa"
+
+
+mkdir run1/dating.msa.chr1-15
+mkdir run1/dating.msa.chr1-15.sorted
+cat common.buscos.chr1-15.lst | parallel -j 100 "echo {}; prank -d=busco.fasta.fused.chr1-15/{}.fa -f=fasta -DNA -iterate=10 -o=run1/dating.msa.chr1-15/{}; cat run1/dating.msa.chr1-15/{}.best.fas | pxssort --sortby 1 > run1/dating.msa.chr1-15.sorted/{}.fa"
+
+
+
+## remove alignment sites with gaps
+INPUTLIST="common.buscos.chr16nr.lst"
+mkdir run1/dating.msa.chr16nr.sorted.pxclsq
+rm -f run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt
+
+N=$(cat $INPUTLIST | wc -l) && echo $N
+for (( i = 1 ; i < $N+1 ; i++))
+ do
+BUSCOGENE=$(cat $INPUTLIST | sed -n $i'p')
+echo $i". "$BUSCOGENE
+cat run1/dating.msa.chr16nr.sorted/$BUSCOGENE.fa | pxclsq -p 1.0 > run1/dating.msa.chr16nr.sorted.pxclsq/$BUSCOGENE.fa
+cat run1/dating.msa.chr16nr.sorted.pxclsq/$BUSCOGENE.fa | pxlssq > run1/dating.msa.chr16nr.sorted.pxclsq/$BUSCOGENE.fa.stats
+echo $BUSCOGENE >> run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt
+cat run1/dating.msa.chr16nr.sorted.pxclsq/$BUSCOGENE.fa.stats >> run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt
+done
+
+cat run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt | grep -B 2 "Number of sequences: " | grep -vP 'Number of|File type|--' > run1/dating.msa.chr16nr.sorted.pxclsq/stats.short.txt
+
+cat run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt | grep "   -"
+cat run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt | grep "   ?"
+cat run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt | grep "Number of sequences: " | wc -l 
+cat run1/dating.msa.chr16nr.sorted.pxclsq/stats.txt | grep -B 2 "Number of sequences: " | grep -vP 'Number of|File type|--' | wc -l
+
+### concat alignment
+FOLDERCONCAT="run1/dating.msa.chr16nr.sorted.pxclsq.concat"
+mkdir $FOLDERCONCAT
+pxcat -s run1/dating.msa.chr16nr.sorted.pxclsq/*.fa -p $FOLDERCONCAT/busco.dating.chr16nr.partitions -o $FOLDERCONCAT/busco.dating.chr16nr.supermatrix.fa
+pxlssq -s $FOLDERCONCAT/busco.dating.chr16nr.supermatrix.fa > $FOLDERCONCAT/busco.dating.chr16nr.supermatrix.fa.stats
+cat $FOLDERCONCAT/busco.dating.chr16nr.supermatrix.fa.stats
+
+
+
+
+## remove alignment sites with gaps
+#INPUTLIST="common.buscos.chr1-15.lst"
+cat common.buscos.chr1-15.lst | grep -vwP '3303at7399|850at7399' > common.buscos.chr1-15.removed.3303.850.lst
+INPUTLIST="common.buscos.chr1-15.removed.3303.850.lst"
+#2161 samples
+mkdir run1/dating.msa.chr1-15.sorted.pxclsq
+rm -f run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt
+
+N=$(cat $INPUTLIST | wc -l) && echo $N
+for (( i = 1 ; i < $N+1 ; i++))
+ do
+BUSCOGENE=$(cat $INPUTLIST | sed -n $i'p')
+echo $i". "$BUSCOGENE
+cat run1/dating.msa.chr1-15.sorted/$BUSCOGENE.fa | pxclsq -p 1.0 > run1/dating.msa.chr1-15.sorted.pxclsq/$BUSCOGENE.fa
+cat run1/dating.msa.chr1-15.sorted.pxclsq/$BUSCOGENE.fa | pxlssq > run1/dating.msa.chr1-15.sorted.pxclsq/$BUSCOGENE.fa.stats
+echo $BUSCOGENE >> run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt
+cat run1/dating.msa.chr1-15.sorted.pxclsq/$BUSCOGENE.fa.stats >> run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt
+done
+
+cat run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt | grep -B 2 "Number of sequences: " | grep -vP 'Number of|File type|--' > run1/dating.msa.chr1-15.sorted.pxclsq/stats.short.txt
+
+cat run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt | grep "   -"
+cat run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt | grep "   ?"
+cat run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt | grep "Number of sequences: " | wc -l 
+cat run1/dating.msa.chr1-15.sorted.pxclsq/stats.txt | grep -B 2 "Number of sequences: " | grep -vP 'Number of|File type|--' | wc -l
+#2161
+
+### concat alignment
+FOLDERCONCAT="run1/dating.msa.chr1-15.sorted.pxclsq.concat"
+mkdir $FOLDERCONCAT
+pxcat -s run1/dating.msa.chr1-15.sorted.pxclsq/*.fa -p $FOLDERCONCAT/busco.dating.chr1-15.partitions -o $FOLDERCONCAT/busco.dating.chr1-15.supermatrix.fa
+pxlssq -s $FOLDERCONCAT/busco.dating.chr1-15.supermatrix.fa > $FOLDERCONCAT/busco.dating.chr1-15.supermatrix.fa.stats
+cat $FOLDERCONCAT/busco.dating.chr1-15.supermatrix.fa.stats
+
+
+
+
+### 2 genes cause segfault because during filtering for 0% gaps no sequence is left. lets remove these from the analysis
+1635. 3303at7399
+Segmentation fault (core dumped)
+2042. 850at7399
+Segmentation fault (core dumped)
+run1/dating.msa.chr1-15.sorted.pxclsq/850at7399.fa
+run1/dating.msa.chr1-15.sorted.pxclsq/3303at7399.fa
+
+## these genes were removed from further analysis (above)
+
+
+

@@ -1,0 +1,5 @@
+gem-1-bigB-m-majorityallele,CGI1-1-bigB-m -3.91
+Lad4-1-bigB-m-majorityallele,CGI1-1-bigB-m -2.67
+Par2-5-bigB-m,CGI1-1-bigB-m -1.76
+SRR9008215_meg-128-BZ-bigB,CGI1-1-bigB-m -1.09
+SRR9008200_ric-88-Ros-bigB,CGI1-1-bigB-m -1.01

@@ -1,0 +1,54 @@
+
+#chr1-15
+cat Solenopsis.BUSCO.chr1-15.lst \
+gng20170922.fa.busco405/gng20170922.fa.busco405.complete.lst \
+GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405/GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405.complete.lst \
+GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405/GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405.complete.lst \
+GCA_010367695.1_ASM1036769v1_genomic.fna.busco405/GCA_010367695.1_ASM1036769v1_genomic.fna.busco405.complete.lst \
+GCA_009299975.1_ASM929997v1_genomic.fna.busco405/GCA_009299975.1_ASM929997v1_genomic.fna.busco405.complete.lst \
+GCA_009299965.1_ASM929996v1_genomic.fna.busco405/GCA_009299965.1_ASM929996v1_genomic.fna.busco405.complete.lst \
+SRR9008133.masurca.3.3.7.fa.busco405/SRR9008133.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008142.masurca.3.3.7.fa.busco405/SRR9008142.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008150.masurca.3.3.7.fa.busco405/SRR9008150.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008158.masurca.3.3.7.fa.busco405/SRR9008158.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008168.masurca.3.3.7.fa.busco405/SRR9008168.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008173.masurca.3.3.7.fa.busco405/SRR9008173.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008200.masurca.3.3.7.fa.busco405/SRR9008200.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008215.masurca.3.3.7.fa.busco405/SRR9008215.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008217.masurca.3.3.7.fa.busco405/SRR9008217.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008228.masurca.3.3.7.fa.busco405/SRR9008228.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008232.masurca.3.3.7.fa.busco405/SRR9008232.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008253.masurca.3.3.7.fa.busco405/SRR9008253.masurca.3.3.7.fa.busco405.complete.lst \
+Sgeminata.fa.busco405/Sgeminata.fa.busco405.complete.lst \
+Spusillignis.fa.busco405/Spusillignis.fa.busco405.complete.lst \
+Ssaevissima2.fa.busco405/Ssaevissima2.fa.busco405.complete.lst \
+Sfugax.fa.busco405/Sfugax.fa.busco405.complete.lst | \
+sort | uniq -c | sed -e 's/^[ \t]*//' | tr ' ' '\t' | awk '$1 == 23' | cut -f2 > common.buscos.chr1-15.lst
+cat common.buscos.chr1-15.lst | wc -l
+
+#chr16nr
+cat Solenopsis.BUSCO.chr16nr.lst \
+gng20170922.fa.busco405/gng20170922.fa.busco405.complete.lst \
+GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405/GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.busco405.complete.lst \
+GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405/GCA_018691235.1_QMUL_Sinv_Sequel2_genomic.fna.busco405.complete.lst \
+GCA_010367695.1_ASM1036769v1_genomic.fna.busco405/GCA_010367695.1_ASM1036769v1_genomic.fna.busco405.complete.lst \
+GCA_009299975.1_ASM929997v1_genomic.fna.busco405/GCA_009299975.1_ASM929997v1_genomic.fna.busco405.complete.lst \
+GCA_009299965.1_ASM929996v1_genomic.fna.busco405/GCA_009299965.1_ASM929996v1_genomic.fna.busco405.complete.lst \
+SRR9008133.masurca.3.3.7.fa.busco405/SRR9008133.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008142.masurca.3.3.7.fa.busco405/SRR9008142.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008150.masurca.3.3.7.fa.busco405/SRR9008150.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008158.masurca.3.3.7.fa.busco405/SRR9008158.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008168.masurca.3.3.7.fa.busco405/SRR9008168.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008173.masurca.3.3.7.fa.busco405/SRR9008173.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008200.masurca.3.3.7.fa.busco405/SRR9008200.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008215.masurca.3.3.7.fa.busco405/SRR9008215.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008217.masurca.3.3.7.fa.busco405/SRR9008217.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008228.masurca.3.3.7.fa.busco405/SRR9008228.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008232.masurca.3.3.7.fa.busco405/SRR9008232.masurca.3.3.7.fa.busco405.complete.lst \
+SRR9008253.masurca.3.3.7.fa.busco405/SRR9008253.masurca.3.3.7.fa.busco405.complete.lst \
+Sgeminata.fa.busco405/Sgeminata.fa.busco405.complete.lst \
+Spusillignis.fa.busco405/Spusillignis.fa.busco405.complete.lst \
+Ssaevissima2.fa.busco405/Ssaevissima2.fa.busco405.complete.lst \
+Sfugax.fa.busco405/Sfugax.fa.busco405.complete.lst | \
+sort | uniq -c | sed -e 's/^[ \t]*//' | tr ' ' '\t' | awk '$1 == 23' | cut -f2 > common.buscos.chr16nr.lst
+cat common.buscos.chr16nr.lst | wc -l

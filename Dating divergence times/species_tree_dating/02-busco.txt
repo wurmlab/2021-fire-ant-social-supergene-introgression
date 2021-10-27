@@ -1,0 +1,5 @@
+conda activate busco_old_405
+CPUs=50
+INPUTFASTA="$PWD/NNNNNNNNNNNNNN.fa"
+~/scripts/busco405.sh -t $CPUs -i $INPUTFASTA
+

@@ -1,0 +1,17 @@
+
+cd $INPUTFASTA.busco405
+cat run_hymenoptera_odb10/full_table.tsv | grep -vP 'Missing|Duplicated|Fragmented|#|Sequence' > $INPUTFASTA.busco405.complete.tsv
+cat run_hymenoptera_odb10/full_table.tsv |  grep -vP 'Missing|Duplicated|Complete|#|Sequence' > $INPUTFASTA.busco405.fragmented.tsv
+cat $INPUTFASTA.busco405.complete.tsv | tabtk cut -r -f 3,4,5,1 | tee $INPUTFASTA.busco405.complete.bed | cut -f4 > $INPUTFASTA.busco405.complete.lst
+cat $INPUTFASTA.busco405.fragmented.tsv | tabtk cut -r -f 3,4,5,1 | tee $INPUTFASTA.busco405.fragmented.bed | cut -f4 > $INPUTFASTA.busco405.fragmented.lst
+
+#test if files are there
+cat $INPUTFASTA.busco405.complete.lst | head -n 50 | parallel -k "ls -1 run_hymenoptera_odb10/busco_sequences/single_copy_busco_sequences/{}.fna"
+
+#get single gene fasta's and rename header to sample
+mkdir $INPUTFASTA.busco405.complete.fasta
+for GENE in $(ls -1 run_hymenoptera_odb10/busco_sequences/single_copy_busco_sequences/*.fna | rev | cut -d"/" -f1 | cut -d"." -f2- | rev)
+do
+cat run_hymenoptera_odb10/busco_sequences/single_copy_busco_sequences/$GENE.fna | seqtk seq -l 0 -C | sed -r "s,^>.+$,>$SAMPLENAME,g" > $INPUTFASTA.busco405.complete.fasta/$GENE.fa
+done
+cd ..
