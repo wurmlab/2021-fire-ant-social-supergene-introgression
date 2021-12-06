@@ -191,14 +191,6 @@ private_alleles <- function(freq_matrix, pop) {
 
 }
 
-private_to_invicta_bb  <- private_alleles(allele_frequencies_ma, pop="invicta_bb")
-private_to_richteri_bb <- private_alleles(allele_frequencies_ma, pop="richteri_bb")
-
-allele_frequencies_ma <- snp_freq[, c("daf_invicta_bb", "daf_invicta_lb", "daf_richteri_bb", "daf_richteri_lb")]
-allele_frequencies_ma <- as.matrix(allele_frequencies_ma)
-
-
-
 snp_freq$private_to_richteri <- snp_freq$daf_invicta_bb == 0 & snp_freq$daf_invicta_lb == 0 &
 (snp_freq$daf_richteri_bb > 0 | snp_freq$daf_richteri_lb > 0 )
 

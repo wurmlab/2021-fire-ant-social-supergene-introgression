@@ -148,6 +148,8 @@ wc -l results/snp_frequencies.csv
 grep -c supergene results/snp_frequencies.csv
 # 39210
 
+rm -rf results/by_scaff
+
 ```
 
 
