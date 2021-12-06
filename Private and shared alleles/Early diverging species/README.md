@@ -1,6 +1,6 @@
 # Patterns of allele sharing across the tree
 
-We tested whether the SB branch is longer in S. invicta relative to each focal species. A difference in branch length would support the introgression hypothesis, and inform us on the direction of introgression. In the following example, the SB branch being shorter in S. invicta  than in S. richteri would support introgression from S. invicta (first tree), as the S. richteri SB would have had a longer period of independent evolution:
+We tested whether the SB branch of _S. invicta_ shares more alleles with Sb than the SB branch of each of the other species:
 
 ((richteri_b, invicta_b),invicta_B),richteri_B)),saevissima)
 ((richteri_b, invicta_b),richteri_B),invicta_B)),saevissima)

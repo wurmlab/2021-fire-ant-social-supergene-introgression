@@ -51,7 +51,7 @@ dir.create(recursive = T, "results/fig")
 read_dfoil <- function(path, species) {
   dfoil <- read.table(path, comment.char = '&', header = T)
   dfoil$species <- species
-    
+
   dfoil %>%
     rename(gene = X.chrom) %>%
     mutate(gene = gsub(".*\\/", "", gene)) %>%
@@ -107,23 +107,35 @@ ggplot(all_dfoil_snps) +
 
 ## Introduction
 
-We have used the DFOIL software to count allele patterns, assuming the following species tree topology:
+
+Our main aim is to use alleles combination patterns (analagous to the ABBA-BABA test) to tell apart between the three hypothesis for the origin of the supergene.
+
+Taking the comparison between _S. invicta_ and _S. richteri_ as an example, the parallel origin hypothesis has following tree topology, mirroring the species tree:
 
 ((richteri_B, richteri_b),(invicta_b, invicta_B)),saevissima).
 
-We ask which of the two introgression scenarios is most likely:
+The ancestral polymorphism hypothesis follows the following tree:
+
+((richteri_b, invicta_b),(invicta_B,richteri_B)),saevissima)
+
+The introgression hypothesis follows one of the following trees:
 
 ((richteri_b, invicta_b),invicta_B),richteri_B)),saevissima)
 
 ((richteri_b, invicta_b),richteri_B),invicta_B)),saevissima)
 
+We use the DFOIL approach charecterise allele distributions across the species. DFOIL considers symmetrical five-taxon the "species tree" topology, with the introgressed species on the left two branches, _S. invicta_ in the two middle branches and the outgroup _S. saevissima_ on the right branch. As an example, the _S. richeteri_ tree we considered is:
+
+((richteri_B, richteri_b),(invicta_b, invicta_B)),saevissima).
+
+We chose a single sample to represent each species. For each gene in the supergene, we counted the occurance of every possible allele combination. We repeated this for each four species with a putative introgression of Sb.
 
 ```{r}
 
 read_allele_counts <- function(path, species) {
   dfoil <- read.table(path, comment.char = '&', header = T)
   dfoil$species <- species
-    
+
   dfoil %>%
     rename(gene = X.chrom) %>%
     mutate(gene = gsub(".*\\/", "", gene)) %>%
@@ -153,78 +165,101 @@ all_counts %>%
 
 ```
 
-## Evidence that Sb introgressed from _S. invicta_ to the remaining species 
+## Evidence that Sb introgressed from _S. invicta_ to the remaining species
 
-We tested whether the SB branch is longer in _S. invicta_ relative to each focal species. A difference in branch length would support the introgression hypothesis, and inform us on the direction of introgression:
-
-((richteri_b, invicta_b),invicta_B),richteri_B)),saevissima)
-
-((richteri_b, invicta_b),richteri_B),invicta_B)),saevissima)
-
-We tested the hypothesis that the species in which Sb evolved will have fewer alleles private to SB, given that it will share part of its branch with Sb. We found that the SB of _S. invicta_ had fewer private alleles than the SB of each focal species. This difference was small but significant in all species (two-tail paired t-test, Bonferonni-corrected p < 0.05) except for _S. interrupta_, where there was no significant difference.
+We tested the hypothesis that the SB alleles of the species in which Sb evolved will have more private alleles in common with Sb than the other species. Most genes had a small number of such alleles. Nevertheless, on average _S. invicta_ had more private alleles in common with Sb than each of the focal species (two-tail paired t-test, Bonferonni-corrected p < 0.05).
 
 ```{r, fig.height = 6, fig.width = 6}
 
-all_counts %>%
-  mutate(species = paste0("S. ", species)) %>%
-  ggplot() +
-  geom_point(aes(x = AAABA, y =  BAAAA), alpha = 0.5) +
-  facet_wrap(vars(species), ncol = 2) +
-  theme_bw() +
-  geom_abline(slope=1, intercept=0) +
-  coord_fixed(xlim = c(0, 50), ylim = c(0,50)) +
-  xlab("Private to S. invicta SB") +
-  ylab("Private to focal SB") -> p1
-p1
+# Alleles shared between Sb and invicta SB
+# ((richteri_B, richteri_b),(invicta_b, invicta_B)),saevissima).
+# ABBBA
+# AABBA
+# ABABA
+# Alleles shared between Sb and richteri SB
+# ((richteri_B, richteri_b),(invicta_b, invicta_B)),saevissima).
+# BBBAA
+# BABAA
+# BBAAA
 
 all_counts %>%
+  mutate(shared_lb_invicta_bb = ABBBA,
+         shared_lb_focal_bb = BBBAA) %>%
+  mutate(species = as.factor(paste0("S. ", species))) ->
+  shared_lb_each_bb
+
+shared_lb_each_bb %>%
   group_by(species) %>%
-  summarise(p = t.test(AAABA, BAAAA, paired = TRUE)$p.value,
-            t = t.test(AAABA, BAAAA, paired = TRUE)$statistic,
-            estimate = t.test(AAABA, AABAA, paired = TRUE)$estimate,
-            mean_invicta = mean(AAABA),
-            mean_focal = mean(BAAAA)) %>%
-  ungroup %>%
-  mutate(corrected_p = p * 4) %>%
-  mutate(significant = ifelse(corrected_p < 0.05,"*","")) %>%
-  as.data.frame()
+  nest() %>%
+  mutate(model        = map(data,
+                            ~ t.test(.$shared_lb_invicta_bb,
+                                          .$shared_lb_focal_bb,
+                                          paired = TRUE)),
+         results      = map(model, tidy),
+         mean_invicta = map(data, ~ mean(.$shared_lb_invicta_bb)),
+         mean_focal   = map(data, ~ mean(.$shared_lb_focal_bb)),
+         sum_invicta  = map(data, ~ sum(.$shared_lb_invicta_bb)),
+         sum_focal    = map(data, ~ sum(.$shared_lb_focal_bb))) %>%
+  unnest(c(results, mean_invicta, mean_focal, sum_invicta, sum_focal)) %>%
+  select(-data, -model, -method, -alternative) %>%
+  mutate(perc_diff = round(100 * (mean_invicta - mean_focal) / mean_focal),
+         corrected_p = 4 * p.value) ->
+  shared_lb_each_bb_summary
+
+as.data.frame(shared_lb_each_bb_summary)
+
 
 ```
 
-We then tested the hypothesis that the species in which Sb evolved will have more private alleles in common with Sb than the other species. Most genes had a small number of such alleles. Nevertheless, on average _S. invicta_ had more private alleles in common with Sb than each of the focal species (two-tail paired t-test, Bonferonni-corrected p < 0.05).
 
-```{r, fig.height = 6, fig.width = 6}
+```{r}
 
-all_counts %>%
-  mutate(species = paste0("S. ", species)) %>%
+# Add P-value to plot for printing
+ parse_p <- function(p_value, facetting_var) {
+
+  if (is.na(p_value)) {
+    p_value <- paste0("atop('", expr(!!facetting_var), "',",
+                     ")")
+  } else if (p_value >= 0.05) {
+    p_value <- paste0("atop('", expr(!!facetting_var), "',",
+                     "'corrected p =", expr(!!round(p_value, 2)),"')")
+  } else if (p_value < 0.05 & p_value >= 0.001) {
+    p_value <- paste0("atop('", expr(!!facetting_var), "',",
+                     "'corrected p = ", expr(!!round(p_value, 3)),"')")
+  } else {
+    p_value <- paste0("atop('", expr(!!facetting_var), "',",
+                     "'corrected p < 10'", "^", expr(!!(floor(log10(abs(p_value))) + 1)),")")
+  }
+  return(p_value)
+}
+
+species_levels <- levels(shared_lb_each_bb$species)
+p_vector      <- shared_lb_each_bb_summary$corrected_p[match(species_levels, shared_lb_each_bb_summary$species)]
+
+# Make P value expression
+p_vector <- sapply(1:length(p_vector), function(i) parse_p(p_vector[i],
+                                                           species_levels[i]))
+
+shared_lb_each_bb$species <- factor(shared_lb_each_bb$species,
+                                    labels = p_vector)
+
+shared_lb_each_bb %>%
   ggplot() +
-  geom_point(aes(x = ABBBA + AABBA + ABABA, y =  BBBAA + BABAA + BBABA), alpha = 0.5) +
-  facet_wrap(vars(species), ncol = 2) +
+  geom_point(aes(x = shared_lb_invicta_bb,
+                 y =  shared_lb_focal_bb), alpha = 0.5) +
+  facet_wrap(vars(species), ncol = 2, labeller = labeller(species = label_parsed)) +
   theme_bw() +
   geom_abline(slope=1, intercept=0) +
-  coord_fixed(xlim = c(0, 25), ylim = c(0, 25)) +
+  coord_fixed(xlim = c(0, 21.5), ylim = c(0, 21.5)) +
   xlab("Shared between Sb and the S. invicta SB") +
   ylab("Shared between Sb and the focal SB") -> p2
 
 p2
 
-all_counts %>%
-  group_by(species) %>%
-  summarise(p = t.test(ABBBA + AABBA + ABABA, BBBAA + BABAA + BBABA, paired = TRUE)$p.value,
-            t = t.test(ABBBA + AABBA + ABABA, BBBAA + BABAA + BBABA, paired = TRUE)$statistic,
-            estimate = t.test(ABBBA + AABBA + ABABA, BBBAA + BABAA + BBABA, paired = TRUE)$estimate,
-            mean_invicta = mean(ABBBA + AABBA + ABABA),
-            mean_focal = mean(BBBAA + BABAA + BBABA)) %>%
-  ungroup %>%
-  mutate(corrected_p = p * 4) %>%
-  mutate(significant = ifelse(corrected_p < 0.05,"*","")) %>%
-  as.data.frame()
-
-ggsave(p1 + p2 + plot_annotation(tag_levels = 'a'), file = "results/fig/shared_private.pdf", width = 9, height = 4.5)
+ggsave(p2, file = "results/lb_shared_each_bb.pdf", width = 6, height = 6)
 
 ```
 
 ## Conclusion
 
-The fact that SB had fewer private alleles in _S. invicta_ than in any of the other species is consistent with an introgression from _S. invicta_ to each of the other species, as is the fact that SB of _S. invicta_ shared more alleles with the Sb branch than the SB of any other species.
-
+The fact that SB of _S. invicta_ shared more alleles with the Sb branch than the SB of any other species is consistent with an introgression from _S. invicta_ to each of the other species.
