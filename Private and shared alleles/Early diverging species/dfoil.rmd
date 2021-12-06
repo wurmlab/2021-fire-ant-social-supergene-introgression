@@ -1,5 +1,5 @@
 ---
-title: "Applyinf the dfoil method to study the introgression of Sb"
+title: "Applying the dfoil method to study the introgression of Sb"
 author: "Rodrigo Pracana, QMUL"
 date: "21/10/2021"
 output: html_document
