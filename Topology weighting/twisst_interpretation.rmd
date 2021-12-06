@@ -303,6 +303,28 @@ weight_by_window$Topology_type[!weight_by_window$Topology_type %in% c("Introgres
                                                      "Trans-species\npolymorphism",
                                                      "Species tree")] <- "Other"
 
+```
+
+## Remove genes from scaffold NW_011795620.1
+
+Using blast, we have double-checked the location of supergene in the assembly by Yan et al (2020). We found that the four genes in scaffold NW_011795620.1 map ar atound 8.2Mb in chromosome 16, whereas the supergene region maps at position 12.6Mb. We have removed these four genes from the analysus
+
+```{r}
+
+weight_by_window %>%
+  filter((chrom == "chr16") & (start >= 11680438) & (end <= 11719720)) -> to_filter_out
+
+stopifnot(length(table(to_filter_out$ID)) == 1)
+
+weight_by_window %>%
+  filter(!((chrom == "chr16") & (start >= 11680438) & (end <= 11719720))) -> weight_by_window
+
+```
+
+## Number of trees supporting a given tree
+
+```{r}
+
 # Subset dataset to best
 weight_by_window %>%
   group_by(ID, chrom, start, end, mid, region) %>%
@@ -349,7 +371,7 @@ topology_order <- c("Introgression (S. invicta to S. richteri)",
 my_colours <-  c("Introgression (S. invicta to S. richteri)" = "#0072B2",
                  "Introgression (S. richteri to S. invicta)" = "#56B4E9",
                  "Trans-species polymorphism" = "#F0E442",
-                 "Species tree" = "#009E73", 
+                 "Species tree" = "#009E73",
                  "topo113" = "#E69F00",
                  "topo641" = "#D55E00",
                  "topo643" = "#CC79A7",
@@ -369,7 +391,7 @@ best_topologies_per_window_filtered %>%
   group_by(region) %>%
   mutate(perc = n / sum(n)) %>%
   ggplot(aes(x = Best_topology_type, fill = Best_topology, y = perc)) +
-    geom_bar(stat = "identity") + 
+    geom_bar(stat = "identity") +
     scale_y_continuous(labels=scales::percent, name = "Windows supporting topology") +
     facet_grid(rows=vars(region)) +
     theme_bw() +
@@ -378,7 +400,7 @@ best_topologies_per_window_filtered %>%
     theme(legend.position = c(0.25, 0.7),
           legend.background = element_rect(fill="white",
                                            size=0.5,
-                                           linetype="solid", 
+                                           linetype="solid",
                                            colour ="darkgrey")) -> p
 
 ggsave(p, file = "results/twisst_figures/best_topology_per_window.pdf",
@@ -395,7 +417,7 @@ best_topologies_per_window_filtered %>%
   group_by(region) %>%
   mutate(perc = n / sum(n)) %>%
   ggplot(aes(x = Best_topology_type, fill = Best_topology, y = perc)) +
-    geom_bar(stat = "identity") + 
+    geom_bar(stat = "identity") +
     facet_grid(cols=vars(region)) +
     scale_y_continuous(labels=scales::percent, name = "Windows supporting topology") +
     theme_bw() +
@@ -405,13 +427,12 @@ best_topologies_per_window_filtered %>%
     theme(legend.position = c(0.25, 0.7),
           legend.background = element_rect(fill="white",
                                            size=0.5,
-                                           linetype="solid", 
+                                           linetype="solid",
                                            colour ="darkgrey")) -> p
 
 ggsave(p, file = "results/twisst_figures/best_topology_per_window_facet.pdf",
         width = 7, height = 4)
 p
-
 
 ```
 
@@ -434,13 +455,34 @@ best_topologies_per_window_filtered %>%
   group_by(region, Best_topology_type) %>%
   count %>%
   group_by(region) %>%
-  mutate(perc = round(100* n / sum(n)))
+  mutate(perc = round(100* n / sum(n))) %>%
+  as.data.frame()
 
 best_topologies_per_window_filtered %>%
   group_by(region, Best_topology_type, Best_topology) %>%
   count %>%
   group_by(region) %>%
-  mutate(perc = round(100* n / sum(n)))
+  mutate(perc = round(100* n / sum(n))) %>%
+  as.data.frame()
+
+```
+
+After collapsing the trees with diverging early branches:
+
+```{r}
+
+best_topologies_per_window_filtered_coll <- best_topologies_per_window_filtered
+
+best_topologies_per_window_filtered_coll$Best_topology[best_topologies_per_window_filtered_coll$Best_topology == "topo641"] <-  "Introgression (S. invicta to S. richteri)"
+best_topologies_per_window_filtered_coll$Best_topology[best_topologies_per_window_filtered_coll$Best_topology == "topo643"] <-  "Species tree"
+best_topologies_per_window_filtered_coll$Best_topology[best_topologies_per_window_filtered_coll$Best_topology == "topo13"] <-  "Species tree"
+
+best_topologies_per_window_filtered_coll %>%
+  group_by(region, Best_topology_type, Best_topology) %>%
+  count %>%
+  group_by(region) %>%
+  mutate(perc = round(100* n / sum(n))) %>%
+  as.data.frame()
 
 ```
 
@@ -460,7 +502,7 @@ topology_order_for_trees <- c("topo116",
 my_colours <-  c("Introgression (S. invicta to S. richteri)" = "#0072B2",
                  "Introgression (S. richteri to S. invicta)" = "#56B4E9",
                  "Trans-species polymorphism" = "#F0E442",
-                 "Species tree" = "#009E73", 
+                 "Species tree" = "#009E73",
                  "topo113" = "#E69F00",
                  "topo641" = "#D55E00",
                  "topo643" = "#CC79A7",
@@ -517,15 +559,15 @@ topology_order <- c("Introgression (S. invicta to S. richteri)",
                      "Species tree",
                      "Other")
 # best_topologies_per_window_plot <- best_topologies_per_window
-# 
+#
 # best_topologies_per_window_plot$Best_topology[!best_topologies_per_window_plot$Best_topology %in%
 #                                                 topology_order] <- "Other"
-#   
+#
 
 my_colours <-  c("Introgression (S. invicta to S. richteri)" = "#0072B2",
                  "Introgression (S. richteri to S. invicta)" = "#56B4E9",
                  "Trans-species polymorphism" = "#F0E442",
-                 "Species tree" = "#009E73", 
+                 "Species tree" = "#009E73",
                  "Other" = "#E69F00")
 
 scaffold_fill <- c(
@@ -612,7 +654,7 @@ topology_colour <- colorblind_pal()(length(top_topologies_names) + 1)[-1]
 topology_colour <- c(topology_colour[1], topology_colour[6], topology_colour[2],
                      topology_colour[3], topology_colour[4], topology_colour[5])
 topology_colour <- rev(topology_colour)
-  
+
 # Sum the relative weights of all "Other" topologies
 weight_by_window %>%
   select(-Topology_type, -Topology) %>%
@@ -637,6 +679,7 @@ weight_by_window_with_other %>%
 
 
 ```{r fig.width = 14, fig.height = 4}
+
 weight_by_window_with_other_rect %>%
   ggplot() +
   geom_rect(aes(xmin = start,
@@ -655,58 +698,37 @@ weight_by_window_with_other_rect %>%
                                                    suffix = " Mb")) -> p
 
 p
-```
-
-```{r fig.width = 14, fig.height = 4}
-weight_by_window_with_other_rect %>%
-  ggplot() +
-  geom_line(aes(x = mid,
-                y = Relative_weight,
-                group = Topology_id,
-                colour = Topology_id)) +
-  theme_bw() +
-  scale_colour_manual(breaks = rev(names(top_topologies_names)),
-                    labels = rev(top_topologies_names),
-                    values = rev(topology_colour)) +
-    facet_grid(rows=vars(chrom)) +
-  ylab("Relative weight of topology") +
-  xlab("Window middle coordinate in chromosome 16")
-
-```
-
-```{r fig.width = 14, fig.height = 4}
-
-# p <- ggplot(data=weight_by_window_with_other_rect,
-#             aes(x=mid, group=Topology_id, fill=Topology_id)) +
-#     geom_density(adjust=1.5, position="fill") +
-#   theme_bw() +
-#     facet_grid(rows=vars(chrom)) +
-#   scale_fill_manual(breaks = rev(names(top_topologies_names)),
-#                     labels = rev(top_topologies_names),
-#                     values = rev(topology_colour)) +
-#   ylab("Relative weight of topology") +
-#   xlab("Window middle coordinate in chromosome 16")
-# p
-# 
-
-
-weight_by_window_with_other_rect %>%
-  mutate(Topology_id = fct_relevel(Topology_id, rev(levels(weight_by_window_with_other_rect$Topology_id)))) %>%
-  ggplot(aes(x = mid,
-             y = Relative_weight,
-             fill = Topology_id)) +
-    geom_area() +
-  theme_bw() +
-  scale_fill_manual(breaks = rev(names(top_topologies_names)),
-                    labels = rev(top_topologies_names),
-                    values = rev(topology_colour)) +
-    facet_grid(rows=vars(chrom)) +
-  ylab("Relative weight of topology") +
-  xlab("Window middle coordinate in chromosome 16")
 
 ```
 
 ## Windows per inversion
+
+```{r}
+
+inversion_df <- best_topologies_per_window
+
+inversion_df$Inversion <- "No known inversion"
+
+inversion_df$Inversion[inversion_df$chrom == "chr16" &
+                             inversion_df$mid > 11732910 &
+                             inversion_df$mid < 16339881 ] <- "In(16)3"
+
+inversion_df$Inversion[inversion_df$chrom == "chr16" &
+                             inversion_df$mid > 16509882 &
+                             inversion_df$mid < 17962688 ] <- "In(16)2"
+
+inversion_df$Inversion[inversion_df$chrom == "chr16" &
+                             inversion_df$mid > 17972920 &
+                             inversion_df$mid < 28149888 ] <- "In(16)1"
+
+# Rename topologies with discordant early branches
+inversion_df$Best_topology[inversion_df$Best_topology == "topo641"] <- "Introgression (S. invicta to S. richteri)"
+inversion_df$Best_topology[inversion_df$Best_topology == "topo643"] <- "Species tree"
+inversion_df$Best_topology[inversion_df$Best_topology == "topo13"]  <- "Species tree"
+inversion_df$Best_topology[inversion_df$Best_topology == "topo113"] <- "Other"
+
+```
+
 
 ```{r, echo=TRUE}
 
@@ -716,8 +738,7 @@ lm %>%
 
 as.data.frame(inv_3_reg)
 
-best_topologies_per_window %>%
-  filter(chrom == "chr16", start > 11732910, end < 16339881) -> inv_3_windows
+filter(inversion_df, Inversion == "In(16)3") -> inv_3_windows
 
 stopifnot(nrow(inv_3_windows) == 0)
 
@@ -734,8 +755,7 @@ lm %>%
 
 as.data.frame(inv_2_reg)
 
-best_topologies_per_window %>%
-  filter(chrom == "chr16", mid > 16509882, mid < 17962688) -> inv_2_windows
+filter(inversion_df, Inversion == "In(16)2") -> inv_2_windows
 
 inv_2_windows_high <- inv_2_windows[inv_2_windows$Relative_weight > 0.9,]
 
@@ -746,6 +766,7 @@ inv_2_size <- sum(inv_2_reg$chr_end - inv_2_reg$chr_start)
 ```
 
 The inversion In(16)2 region of the supergene is `r round(inv_2_size/1e6, 2)` Mbp long. There were `r nrow(inv_2_windows)` windows in In(16)2 region of the supergene. Out of these, `r nrow(inv_2_windows_high)` had a single topology with a weight greater than 0.9, both supporting the _S. invicta_ to _S. richteri_ introgression scenario.
+
 
 ```{r}
 
@@ -764,8 +785,7 @@ inv_1_reg %>%
   slice(c(1,n())) %>%
   as.data.frame()
 
-best_topologies_per_window %>%
-  filter(chrom == "chr16", mid > 17972920, mid < 28149888) -> inv_1_windows
+filter(inversion_df, Inversion == "In(16)1") -> inv_1_windows
 
 inv_1_windows_high <- inv_1_windows[inv_1_windows$Relative_weight > 0.9,]
 
@@ -778,29 +798,11 @@ inv_1_size <- sum(inv_1_reg$chr_end - inv_1_reg$chr_start)
 
 The inversion In(16)1 region of the supergene is `r round(inv_1_size/1e6, 2)` Mbp long. There were `r nrow(inv_1_windows)` windows in In(16)1 region of the supergene. Out of these, `r nrow(inv_1_windows_high)` (`r round(100 * nrow(inv_1_windows_high)/nrow(inv_1_windows))`%) had a single topology with a relative weight greater than 0.9. Of these, `r inv_1_windows_high_int` (`r round(100*inv_1_windows_high_int/nrow(inv_1_windows_high))`%) suported the _S. invicta_ to _S. richteri_ introgression scenario, while `r inv_1_windows_high_anc` (`r round(100*inv_1_windows_high_anc/nrow(inv_1_windows_high))`%) supported the next best topology, consistent with the Trans-species ancestral polymorphism.
 
-```{r}
-
-best_topologies_per_window$Inversion <- "No known inversion"
-  
-best_topologies_per_window$Inversion[best_topologies_per_window$chrom == "chr16" &
-                             best_topologies_per_window$mid > 11732910 &
-                             best_topologies_per_window$mid < 16339881 ] <- "In(16)3"
-
-best_topologies_per_window$Inversion[best_topologies_per_window$chrom == "chr16" &
-                             best_topologies_per_window$mid > 16509882 &
-                             best_topologies_per_window$mid < 17962688 ] <- "In(16)2"
-
-best_topologies_per_window$Inversion[best_topologies_per_window$chrom == "chr16" &
-                             best_topologies_per_window$mid > 17972920 &
-                             best_topologies_per_window$mid < 28149888 ] <- "In(16)1"
-
-```
-
 The number of windows with a single topology with a relative wight greater than 0.9 is:
 
 ```{r}
 
-best_topologies_per_window %>%
+inversion_df %>%
   group_by(Inversion) %>%
   summarise(window_number = n(),
             high_weight_windows = sum(Relative_weight > 0.9),
@@ -813,7 +815,7 @@ The number of windows with a single topology with a relative wight greater than 
 
 ```{r}
 
-best_topologies_per_window %>%
+inversion_df %>%
   filter(Relative_weight > 0.9) %>%
   group_by(Inversion, Best_topology) %>%
   summarise(window_number = n()) %>%
