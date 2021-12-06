@@ -16,7 +16,7 @@ All steps relating to read filtering, mapping and genotype calling are presented
 ## Phylogenetic inferences
 
 We inferred the phylogenetic tree of the species and of the supergene using two different approaches:
-1. A coalescent-based approached detailed in the directory [Coalescence-based phylogenies](`Coalescence-based phylogenies`).
+1. A coalescent-based approached detailed in the directory [Coalescence-based phylogenies](Coalescence-based\ phylogenies).
 2. A concatenated alignment approach detailed in the directory [Phylogenies inferred with concatenated SNPs](Phylogenies inferred with concatenated SNPs)
 3. A dated phylogeny approach detailed in the directory [Dating divergence times](Dating divergence times)
 4. Quantification of introgression support using QuIBL [QuIBL analysis](QuIBL analysis)
