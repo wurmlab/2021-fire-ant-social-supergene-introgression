@@ -16,18 +16,18 @@ All steps relating to read filtering, mapping and genotype calling are presented
 ## Phylogenetic inferences
 
 We inferred the phylogenetic tree of the species and of the supergene using two different approaches:
-1. A coalescent-based approached detailed in the directory [Coalescence-based phylogenies](<Coalescence-based phylogenies>).
-2. A concatenated alignment approach detailed in the directory [Phylogenies inferred with concatenated SNPs](Phylogenies inferred with concatenated SNPs)
-3. A dated phylogeny approach detailed in the directory [Dating divergence times](Dating divergence times)
-4. Quantification of introgression support using QuIBL [QuIBL analysis](QuIBL analysis)
-5. Topology weighting analysis using Twisst [Topology weighting](Topology weighting).
+1. A coalescent-based approached detailed in the directory [Coalescence-based phylogenies](<Coalescence-based phylogenies>)
+2. A concatenated alignment approach detailed in the directory [Phylogenies inferred with concatenated SNPs](<Phylogenies inferred with concatenated SNPs>)
+3. A dated phylogeny approach detailed in the directory [Dating divergence times](<Dating divergence times>)
+4. Quantification of introgression support using QuIBL [QuIBL analysis](<QuIBL analysis>)
+5. Topology weighting analysis using Twisst [Topology weighting](<Topology weighting>)
 
-A PCA of the supergene genotypes is presented in the directory [PCA supergene SNPs](PCA supergene SNPs).
+A PCA of the supergene genotypes is presented in the directory [PCA supergene SNPs](<PCA supergene SNPs>).
 
 ## Nucleotide diversity
 
-See directory [Nucleotide diversity (pi)](Nucleotide diversity (pi)).
+See directory [Nucleotide diversity (pi)](<Nucleotide diversity (pi)>).
 
 ## Bray-Curtis dissimilarity between haplotypes
 
-See directory [Bray-Curtis dissimilarity](Bray-Curtis dissimilarity).
+See directory [Bray-Curtis dissimilarity](<Bray-Curtis dissimilarity>).
