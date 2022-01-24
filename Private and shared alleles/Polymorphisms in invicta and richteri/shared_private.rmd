@@ -177,6 +177,35 @@ snp_freq %>%
 
 ```
 
+### Binomial test
+
+```{r , echo=TRUE}
+
+# Binomial test for all alleles
+binom.test(x=c(1921, 994))
+binom.test(x=c(1921, 994))$p.value
+
+# Probability of success: 1921 / 994 = 1.932596
+0.6590051 / (1 - 0.6590051)
+# Low CI = 0.6532821 i,e, 1.79 times
+0.6414720 / (1 - 0.6414720)
+# High CI = 0.7567757 i,e,  2.09 times
+0.6762186 / (1 - 0.6762186)
+
+
+# Binomial test for synonymous alleles (expected to be neutral)
+binom.test(x=c(222, 92))
+
+# 222 / 92 = 2.413043
+0.7070064 / (1 - 0.7070064)
+
+# Low CI = 0.6532821 i,e, 1.88 times
+0.6532821 / (1 -0.6532821)
+# High CI = 0.7567757 i,e,  3.11 times
+0.7567757 / (1 - 0.7567757)
+
+```
+
 ## Private to each lineage
 
 ```{r}
